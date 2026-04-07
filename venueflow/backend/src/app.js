@@ -14,7 +14,6 @@ const staffRoutes = require('./routes/staff');
 
 const app = express();
 
-// Apply Security and Performance Middleware
 app.use(helmet());
 app.use(compression());
 const corsOptions = {
@@ -23,30 +22,23 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
-
-// Apply rate limiter to all routes
 app.use(rateLimiter);
 
-// Routes
 app.use('/api/crowd', crowdRoutes);
 app.use('/api/queue', queueRoutes);
 app.use('/api/gemini', geminiRoutes);
 app.use('/api/staff', staffRoutes);
 
-// Health check endpoint
 app.get('/health', (req, res) => {
     res.status(200).json({ status: 'healthy' });
 });
 
-// Global Error Handler
 app.use(errorHandler);
 
 module.exports = app;
 
-if (require.main === module) {
-    const PORT = process.env.PORT || 8080;
-    app.listen(PORT, () => {
-        // eslint-disable-next-line no-console
-        console.info(`Server is running on port ${PORT}`);
-    });
-}
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, '0.0.0.0', () => {
+    // eslint-disable-next-line no-console
+    console.info(`VenueFlow server running on 0.0.0.0:${PORT}`);
+});
