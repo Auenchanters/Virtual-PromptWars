@@ -1,14 +1,36 @@
 const rateLimit = require('express-rate-limit');
+const {
+    READ_RATE_LIMIT_MAX,
+    WRITE_RATE_LIMIT_MAX,
+    RATE_LIMIT_WINDOW_MS,
+} = require('../config/constants');
+
+const sharedOptions = {
+    windowMs: RATE_LIMIT_WINDOW_MS,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.', status: 429 },
+};
 
 /**
- * Rate Limiter middleware to enforce 100 requests per 15 mins per IP.
+ * Applied globally. Read-heavy GET endpoints only count toward this limiter.
  */
-const rateLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-    message: { error: 'Too many requests, please try again later.', status: 429 }
+const readLimiter = rateLimit({
+    ...sharedOptions,
+    max: READ_RATE_LIMIT_MAX,
 });
 
-module.exports = { rateLimiter };
+/**
+ * Applied selectively to POST routes that touch Gemini or Firebase writes.
+ * Lower ceiling keeps AI cost and broadcast spam in check.
+ */
+const writeLimiter = rateLimit({
+    ...sharedOptions,
+    max: WRITE_RATE_LIMIT_MAX,
+});
+
+module.exports = {
+    rateLimiter: readLimiter,
+    readLimiter,
+    writeLimiter,
+};

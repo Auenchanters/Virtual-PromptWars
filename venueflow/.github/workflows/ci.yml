@@ -9,29 +9,30 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
+    - uses: actions/checkout@v4
+
     - name: Use Node.js 18.x
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '18.x'
-        
+        cache: 'npm'
+
     - name: Install backend dependencies
-      run: cd backend && npm ci
-      
+      run: cd venueflow/backend && npm ci
+
     - name: Lint backend
-      run: cd backend && npm run lint || true
-      
-    - name: Test backend
-      run: cd backend && npm test
-      
+      run: cd venueflow/backend && npm run lint
+
+    - name: Test backend with coverage
+      run: cd venueflow/backend && npm run test:coverage
+
     - name: Install frontend dependencies
-      run: cd frontend && npm ci
-      
+      run: cd venueflow/frontend && npm ci
+
     - name: Lint frontend
-      run: cd frontend && npm run lint || true
-      
-    - name: Test frontend
-      run: cd frontend && npm test
+      run: cd venueflow/frontend && npm run lint
+
+    - name: Test frontend with coverage
+      run: cd venueflow/frontend && npm run test:coverage

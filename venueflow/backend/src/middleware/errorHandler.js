@@ -1,17 +1,23 @@
+const { logger } = require('../utils/logger');
+
 /**
- * Global error handling middleware.
- * @param {Error} err - The error object.
- * @param {import('express').Request} req - The Express request object.
- * @param {import('express').Response} res - The Express response object.
- * @param {import('express').NextFunction} next - The next middleware function.
+ * Global error handling middleware. Returns a sanitized JSON envelope
+ * and never leaks stack traces to the client; full error is logged server-side.
  */
 // eslint-disable-next-line no-unused-vars
 const errorHandler = (err, req, res, next) => {
-    // eslint-disable-next-line no-console
-    console.error('Server Error:', err);
-    res.status(err.status || 500).json({
-        error: err.message || 'Internal Server Error',
-        status: err.status || 500
+    const status = err.status || 500;
+    logger.error('Unhandled error', {
+        requestId: req.id,
+        path: req.originalUrl,
+        method: req.method,
+        status,
+        error: err.message,
+    });
+    res.status(status).json({
+        error: status >= 500 ? 'Internal Server Error' : err.message,
+        status,
+        requestId: req.id,
     });
 };
 

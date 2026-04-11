@@ -1,16 +1,27 @@
+process.env.STAFF_API_KEY = 'test-staff-key';
+process.env.GEMINI_API_KEY = 'test-gemini-key';
+process.env.FIREBASE_PROJECT_ID = 'test-project';
+process.env.FIREBASE_DATABASE_URL = 'https://test.firebaseio.com';
+
 const request = require('supertest');
-const app = require('../src/app');
 
 jest.mock('../src/services/firestoreService', () => ({
-    getCrowdData: jest.fn().mockResolvedValue([
-        { section: '101', density: 'HIGH' },
-    ]),
+    getCrowdData: jest.fn().mockResolvedValue([{ section: '101', density: 'HIGH' }]),
     getQueueData: jest.fn().mockResolvedValue([
         { id: 'gate-1', type: 'gate', waitTimeMinutes: 15 },
         { id: 'concessions-12', type: 'concessions', waitTimeMinutes: 5 },
         { id: 'restroom-west', type: 'restroom', waitTimeMinutes: 2 },
     ]),
 }));
+
+jest.mock('../src/services/geminiService', () => ({
+    chatWithGemini: jest.fn().mockResolvedValue('Mocked'),
+    generateItinerary: jest.fn().mockResolvedValue('Mocked'),
+    generateCrowdSummary: jest.fn().mockResolvedValue('Mocked'),
+    generateCrowdForecast: jest.fn().mockResolvedValue('Mocked'),
+}));
+
+const app = require('../src/app');
 
 describe('Queue API', () => {
     it('GET /api/queue returns 200 with array of queues', async () => {

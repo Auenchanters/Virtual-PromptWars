@@ -1,26 +1,38 @@
+process.env.STAFF_API_KEY = 'test-staff-key';
+process.env.GEMINI_API_KEY = 'test-gemini-key';
+process.env.FIREBASE_PROJECT_ID = 'test-project';
+process.env.FIREBASE_DATABASE_URL = 'https://test.firebaseio.com';
+
 const request = require('supertest');
-const app = require('../src/app');
 
 jest.mock('../src/services/firestoreService', () => ({
     getCrowdData: jest.fn().mockResolvedValue([]),
     getQueueData: jest.fn().mockResolvedValue([]),
 }));
 
-describe('Health Check API', () => {
-    it('GET /health returns 200 with healthy status', async () => {
+const app = require('../src/app');
+
+describe('GET /health', () => {
+    it('returns 200 with healthy status', async () => {
         const response = await request(app).get('/health');
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('status', 'healthy');
     });
 
-    it('GET /health returns a timestamp', async () => {
+    it('returns a valid timestamp', async () => {
         const response = await request(app).get('/health');
         expect(response.body).toHaveProperty('timestamp');
         expect(new Date(response.body.timestamp).toString()).not.toBe('Invalid Date');
     });
 
-    it('GET /health responds with JSON content type', async () => {
+    it('responds with JSON content type', async () => {
         const response = await request(app).get('/health');
         expect(response.headers['content-type']).toMatch(/json/);
+    });
+
+    it('includes an X-Request-Id header', async () => {
+        const response = await request(app).get('/health');
+        expect(response.headers['x-request-id']).toBeDefined();
+        expect(response.headers['x-request-id'].length).toBeGreaterThan(0);
     });
 });
