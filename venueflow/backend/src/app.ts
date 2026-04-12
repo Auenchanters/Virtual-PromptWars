@@ -23,6 +23,7 @@ if (!process.env.STAFF_API_KEY) {
 
 const app = express();
 
+app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(requestId);
 

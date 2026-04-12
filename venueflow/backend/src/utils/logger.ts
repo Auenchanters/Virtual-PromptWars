@@ -4,16 +4,16 @@
  * No external dependency; wraps console.info/warn/error.
  */
 
-const LEVELS = ['debug', 'info', 'warn', 'error'];
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-function buildPayload(level, message, meta) {
-    const payload = {
+function buildPayload(level: LogLevel, message: string, meta?: Record<string, unknown>) {
+    const payload: Record<string, unknown> = {
         timestamp: new Date().toISOString(),
         level,
         message,
     };
     if (meta && typeof meta === 'object') {
-        const rest = {};
+        const rest: Record<string, unknown> = {};
         for (const key of Object.keys(meta)) {
             if (key === 'requestId') {
                 payload.requestId = meta.requestId;
@@ -28,7 +28,7 @@ function buildPayload(level, message, meta) {
     return payload;
 }
 
-function emit(level, message, meta) {
+function emit(level: LogLevel, message: string, meta?: Record<string, unknown>) {
     const line = JSON.stringify(buildPayload(level, message, meta));
     // eslint-disable-next-line no-console
     if (level === 'error') {
@@ -42,9 +42,9 @@ function emit(level, message, meta) {
     }
 }
 
-const logger = LEVELS.reduce((acc, level) => {
-    acc[level] = (message, meta) => emit(level, message, meta);
-    return acc;
-}, {});
-
-module.exports = { logger };
+export const logger = {
+    debug: (message: string, meta?: Record<string, unknown>) => emit('debug', message, meta),
+    info: (message: string, meta?: Record<string, unknown>) => emit('info', message, meta),
+    warn: (message: string, meta?: Record<string, unknown>) => emit('warn', message, meta),
+    error: (message: string, meta?: Record<string, unknown>) => emit('error', message, meta),
+};

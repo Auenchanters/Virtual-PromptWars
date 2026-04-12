@@ -5,7 +5,7 @@ import { logger } from '../utils/logger';
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) throw new Error('GEMINI_API_KEY environment variable is required');
 const genAI = new GoogleGenerativeAI(apiKey);
-const MODEL_NAME = 'gemini-2.0-flash';
+const MODEL_NAME = 'gemini-2.5-flash';
 
 function getModel(): GenerativeModel {
     return genAI.getGenerativeModel({ model: MODEL_NAME });

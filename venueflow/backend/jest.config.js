@@ -17,14 +17,14 @@ module.exports = {
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',
-    '/src/config/firebaseAdmin.js',
+    '/src/config/firebaseAdmin.ts',
     '/src/scripts/',
     '/src/services/geminiService.ts',
     '/src/server.ts',
   ],
   collectCoverageFrom: [
     'src/**/*.{js,ts}',
-    '!src/config/firebaseAdmin.js',
+    '!src/config/firebaseAdmin.ts',
     '!src/scripts/**',
     '!src/services/geminiService.ts',
     '!src/server.ts',

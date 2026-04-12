@@ -32,7 +32,7 @@
 - **Frontend:** React 18, TypeScript, Tailwind CSS, Vite
 - **DevOps:** Docker, Google Cloud Run, Cloud Build
 - **Google Services Integrated (Maximized Score):**
-  1. **Gemini API (gemini-2.0-flash):** Chatbot, crowd summaries, forecasting, and itinerary generation.
+  1. **Gemini API (gemini-2.5-flash):** Chatbot, crowd summaries, forecasting, and itinerary generation.
   2. **Google Maps JavaScript API:** Stadium map with crowd density overlays.
   3. **Firebase Firestore:** Crowd density and queue wait time data.
   4. **Firebase Realtime Database:** Live staff broadcast messages.

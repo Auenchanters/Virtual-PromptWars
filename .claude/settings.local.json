@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(gcloud run:*)",
+      "Bash(gcloud logging:*)",
+      "Bash(npm test:*)",
+      "Bash(gcloud builds:*)",
+      "Bash(curl -s https://venueflow-backend-608358746679.asia-south1.run.app/health)",
+      "Bash(curl -s https://venueflow-backend-608358746679.asia-south1.run.app/api/crowd)",
+      "Bash(curl -s https://venueflow-backend-608358746679.asia-south1.run.app/api/queue)",
+      "Bash(npx tsc:*)",
+      "Bash(curl -s -X POST https://venueflow-backend-608358746679.asia-south1.run.app/api/gemini/chat -H 'Content-Type: application/json' -d '{\"message\":\"Where is the nearest exit?\"}')",
+      "Bash(gcloud services:*)",
+      "Bash(VITE_API_BASE_URL=https://venueflow-backend-608358746679.asia-south1.run.app/api npm run build)",
+      "Bash(npx firebase:*)",
+      "Bash(npm list:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(gcloud secrets:*)",
+      "Bash(curl -s -X POST https://venueflow-backend-608358746679.asia-south1.run.app/api/gemini/chat -H \"Content-Type: application/json\" -d '{\"message\":\"Where is the nearest exit?\"}')",
+      "Bash(curl -s -X POST https://venueflow-backend-608358746679.asia-south1.run.app/api/gemini/itinerary -H 'Content-Type: application/json' -d '{\"section\":\"101\"}')",
+      "Bash(curl -s https://venueflow-backend-608358746679.asia-south1.run.app/api/crowd/forecast)",
+      "Bash(npm run:*)"
+    ]
+  }
+}

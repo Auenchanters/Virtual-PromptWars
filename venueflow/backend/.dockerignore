@@ -1,0 +1,11 @@
+node_modules
+dist
+__tests__
+*.test.ts
+*.spec.ts
+.env
+.env.*
+coverage
+*.log
+.git
+README.md

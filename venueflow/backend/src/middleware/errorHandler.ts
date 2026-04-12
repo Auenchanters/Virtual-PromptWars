@@ -5,7 +5,8 @@ import { logger } from '../utils/logger';
  * Global error handling middleware. Returns a sanitized JSON envelope
  * and never leaks stack traces to the client; full error is logged server-side.
  */
-const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     const status = err.status || 500;
     logger.error('Unhandled error', {
         requestId: req.id,

@@ -1,44 +1,51 @@
 steps:
-  # Build the container image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/venueflow-backend', './backend']
+  # Step 1 — Run tests first (fail fast)
+  - name: 'node:18-alpine'
+    entrypoint: sh
+    args: ['-c', 'cd venueflow/backend && npm ci && npm test -- --passWithNoTests']
 
-  # Push the container image to Container Registry
+  # Step 2 — Docker build
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/venueflow-backend']
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/venueflow-backend:$COMMIT_SHA', './venueflow/backend']
 
-  # Deploy container image to Cloud Run
+  # Step 3 — Docker push
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/venueflow-backend:$COMMIT_SHA']
+
+  # Step 4 — Cloud Run deploy (ALL secrets, CORRECT region)
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
       - 'run'
       - 'deploy'
       - 'venueflow-backend'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/venueflow-backend'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
+      - '--image=gcr.io/$PROJECT_ID/venueflow-backend:$COMMIT_SHA'
+      - '--region=asia-south1'
+      - '--platform=managed'
       - '--allow-unauthenticated'
-      - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest'
+      - '--port=8080'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--min-instances=0'
+      - '--max-instances=10'
+      - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest,FIREBASE_PROJECT_ID=FIREBASE_PROJECT_ID:latest,FIREBASE_DATABASE_URL=FIREBASE_DATABASE_URL:latest,FIREBASE_CLIENT_EMAIL=FIREBASE_CLIENT_EMAIL:latest,FIREBASE_PRIVATE_KEY=FIREBASE_PRIVATE_KEY:latest,STAFF_API_KEY=STAFF_API_KEY:latest'
 
-  # Install frontend dependencies
+  # Step 5 — Frontend npm install
   - name: 'node:18-alpine'
     entrypoint: npm
     args: ['ci']
-    dir: 'frontend'
+    dir: 'venueflow/frontend'
 
-  # Build frontend for production
+  # Step 6 — Frontend build
   - name: 'node:18-alpine'
     entrypoint: npm
     args: ['run', 'build']
-    dir: 'frontend'
+    dir: 'venueflow/frontend'
     env:
       - 'VITE_API_BASE_URL=https://venueflow-backend-608358746679.asia-south1.run.app/api'
       - 'VITE_GOOGLE_MAPS_API_KEY=${_GOOGLE_MAPS_API_KEY}'
 
-  # Deploy frontend to Firebase Hosting
+  # Step 7 — Firebase Hosting deploy
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: bash
     args:
@@ -46,4 +53,4 @@ steps:
       - 'npm install -g firebase-tools && firebase deploy --only hosting --project $PROJECT_ID'
 
 images:
-  - 'gcr.io/$PROJECT_ID/venueflow-backend'
+  - 'gcr.io/$PROJECT_ID/venueflow-backend:$COMMIT_SHA'
