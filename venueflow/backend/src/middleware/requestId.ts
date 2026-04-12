@@ -1,10 +1,19 @@
-const crypto = require('crypto');
+import crypto from 'crypto';
+import { Request, Response, NextFunction } from 'express';
+
+declare global {
+    namespace Express {
+        interface Request {
+            id: string;
+        }
+    }
+}
 
 /**
  * Assigns a unique request id to every incoming request so that logs
  * and error responses can be correlated when debugging production issues.
  */
-function requestId(req, res, next) {
+function requestId(req: Request, res: Response, next: NextFunction): void {
     const incoming = req.headers['x-request-id'];
     const id = (typeof incoming === 'string' && incoming.length > 0 && incoming.length <= 128)
         ? incoming
@@ -14,4 +23,4 @@ function requestId(req, res, next) {
     next();
 }
 
-module.exports = { requestId };
+export { requestId };

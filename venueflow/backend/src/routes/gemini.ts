@@ -1,15 +1,15 @@
-const express = require('express');
-const { body, validationResult } = require('express-validator');
-const { chatWithGemini, generateItinerary } = require('../services/geminiService');
-const { getCrowdData } = require('../services/firestoreService');
-const {
+import express, { Request, Response, NextFunction } from 'express';
+import { body, validationResult } from 'express-validator';
+import { chatWithGemini, generateItinerary } from '../services/geminiService';
+import { getCrowdData } from '../services/firestoreService';
+import {
     MAX_MESSAGE_LENGTH,
     MAX_SECTION_LENGTH,
-} = require('../config/constants');
+} from '../config/constants';
 
 const router = express.Router();
 
-function sendValidationError(req, res, errors) {
+function sendValidationError(req: Request, res: Response, errors: ReturnType<typeof validationResult>) {
     return res.status(400).json({
         error: errors.array()[0].msg,
         status: 400,
@@ -31,7 +31,7 @@ router.post(
             .isLength({ max: MAX_MESSAGE_LENGTH })
             .withMessage(`Message must be at most ${MAX_MESSAGE_LENGTH} characters`),
     ],
-    async (req, res, next) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) return sendValidationError(req, res, errors);
@@ -58,7 +58,7 @@ router.post(
             .isLength({ max: MAX_SECTION_LENGTH })
             .withMessage(`Section must be at most ${MAX_SECTION_LENGTH} characters`),
     ],
-    async (req, res, next) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) return sendValidationError(req, res, errors);
@@ -72,4 +72,4 @@ router.post(
     }
 );
 
-module.exports = router;
+export default router;

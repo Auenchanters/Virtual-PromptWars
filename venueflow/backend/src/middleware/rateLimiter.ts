@@ -1,9 +1,9 @@
-const rateLimit = require('express-rate-limit');
-const {
+import rateLimit from 'express-rate-limit';
+import {
     READ_RATE_LIMIT_MAX,
     WRITE_RATE_LIMIT_MAX,
     RATE_LIMIT_WINDOW_MS,
-} = require('../config/constants');
+} from '../config/constants';
 
 const sharedOptions = {
     windowMs: RATE_LIMIT_WINDOW_MS,
@@ -29,8 +29,8 @@ const writeLimiter = rateLimit({
     max: WRITE_RATE_LIMIT_MAX,
 });
 
-module.exports = {
-    rateLimiter: readLimiter,
+export {
+    readLimiter as rateLimiter,
     readLimiter,
     writeLimiter,
 };

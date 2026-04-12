@@ -3,6 +3,7 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
+  moduleFileExtensions: ['ts', 'js', 'json'],
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/__tests__/',

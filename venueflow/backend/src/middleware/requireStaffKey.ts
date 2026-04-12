@@ -1,5 +1,6 @@
-const crypto = require('crypto');
-const { logger } = require('../utils/logger');
+import crypto from 'crypto';
+import { Request, Response, NextFunction } from 'express';
+import { logger } from '../utils/logger';
 
 /**
  * Guards the staff broadcast endpoint with a shared `X-Staff-Key` header.
@@ -8,24 +9,26 @@ const { logger } = require('../utils/logger');
  * Auth ID-token verification, but the shared-secret model is intentionally
  * small for the hackathon deployment.
  */
-function requireStaffKey(req, res, next) {
+function requireStaffKey(req: Request, res: Response, next: NextFunction): void {
     const expected = process.env.STAFF_API_KEY;
     if (!expected) {
         logger.error('STAFF_API_KEY not configured', { requestId: req.id });
-        return res.status(503).json({
+        res.status(503).json({
             error: 'Staff authentication is not configured on the server.',
             status: 503,
             requestId: req.id,
         });
+        return;
     }
 
     const provided = req.headers['x-staff-key'];
     if (typeof provided !== 'string' || provided.length === 0) {
-        return res.status(401).json({
+        res.status(401).json({
             error: 'Missing staff credentials.',
             status: 401,
             requestId: req.id,
         });
+        return;
     }
 
     const expectedBuf = Buffer.from(expected);
@@ -38,14 +41,15 @@ function requireStaffKey(req, res, next) {
             requestId: req.id,
             ip: req.ip,
         });
-        return res.status(401).json({
+        res.status(401).json({
             error: 'Invalid staff credentials.',
             status: 401,
             requestId: req.id,
         });
+        return;
     }
 
-    return next();
+    next();
 }
 
-module.exports = { requireStaffKey };
+export { requireStaffKey };

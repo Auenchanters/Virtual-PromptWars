@@ -1,8 +1,8 @@
-const express = require('express');
-const NodeCache = require('node-cache');
-const { getCrowdData, getQueueData } = require('../services/firestoreService');
-const { generateCrowdForecast } = require('../services/geminiService');
-const { FORECAST_CACHE_TTL_SECONDS } = require('../config/constants');
+import express, { Request, Response, NextFunction } from 'express';
+import NodeCache from 'node-cache';
+import { getCrowdData, getQueueData } from '../services/firestoreService';
+import { generateCrowdForecast } from '../services/geminiService';
+import { FORECAST_CACHE_TTL_SECONDS } from '../config/constants';
 
 const router = express.Router();
 const forecastCache = new NodeCache({ stdTTL: FORECAST_CACHE_TTL_SECONDS });
@@ -10,7 +10,7 @@ const forecastCache = new NodeCache({ stdTTL: FORECAST_CACHE_TTL_SECONDS });
 /**
  * GET /api/crowd — live crowd density per section.
  */
-router.get('/', async (req, res, next) => {
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const data = await getCrowdData();
         res.setHeader('Cache-Control', 'public, max-age=30');
@@ -25,7 +25,7 @@ router.get('/', async (req, res, next) => {
  * alternative section recommendations. Cached for 60 seconds to keep
  * AI cost predictable.
  */
-router.get('/forecast', async (req, res, next) => {
+router.get('/forecast', async (req: Request, res: Response, next: NextFunction) => {
     try {
         const cached = forecastCache.get('forecast');
         if (cached) {
@@ -46,4 +46,4 @@ router.get('/forecast', async (req, res, next) => {
     }
 });
 
-module.exports = router;
+export default router;

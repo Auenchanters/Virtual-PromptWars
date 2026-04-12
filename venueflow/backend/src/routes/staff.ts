@@ -1,8 +1,8 @@
-const express = require('express');
-const { body, validationResult } = require('express-validator');
-const { broadcastMessage } = require('../services/realtimeService');
-const { requireStaffKey } = require('../middleware/requireStaffKey');
-const { MAX_ANNOUNCEMENT_LENGTH } = require('../config/constants');
+import express, { Request, Response, NextFunction } from 'express';
+import { body, validationResult } from 'express-validator';
+import { broadcastMessage } from '../services/realtimeService';
+import { requireStaffKey } from '../middleware/requireStaffKey';
+import { MAX_ANNOUNCEMENT_LENGTH } from '../config/constants';
 
 const router = express.Router();
 
@@ -23,7 +23,7 @@ router.post(
             .withMessage(`Announcement must be at most ${MAX_ANNOUNCEMENT_LENGTH} characters`)
             .escape(),
     ],
-    async (req, res, next) => {
+    async (req: Request, res: Response, next: NextFunction) => {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
@@ -42,4 +42,4 @@ router.post(
     }
 );
 
-module.exports = router;
+export default router;
