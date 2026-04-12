@@ -2,7 +2,8 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { logger } = require('../utils/logger');
 
 const apiKey = process.env.GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(apiKey || 'mock-key');
+if (!apiKey) throw new Error('GEMINI_API_KEY environment variable is required');
+const genAI = new GoogleGenerativeAI(apiKey);
 const MODEL_NAME = 'gemini-2.0-flash';
 
 function getModel() {
