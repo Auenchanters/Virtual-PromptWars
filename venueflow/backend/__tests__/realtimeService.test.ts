@@ -11,7 +11,7 @@ jest.mock('../src/config/firebaseAdmin', () => ({
     rtdb: { ref: mockRef },
 }));
 
-const { broadcastMessage } = require('../src/services/realtimeService');
+import { broadcastMessage } from '../src/services/realtimeService';
 
 beforeEach(() => {
     jest.clearAllMocks();
@@ -35,8 +35,8 @@ describe('realtimeService – broadcastMessage', () => {
 
     it('throws when announcement is falsy', async () => {
         await expect(broadcastMessage('')).rejects.toThrow('Announcement required.');
-        await expect(broadcastMessage(null)).rejects.toThrow('Announcement required.');
-        await expect(broadcastMessage(undefined)).rejects.toThrow('Announcement required.');
+        await expect(broadcastMessage(null as unknown as string)).rejects.toThrow('Announcement required.');
+        await expect(broadcastMessage(undefined as unknown as string)).rejects.toThrow('Announcement required.');
     });
 
     it('throws when RTDB push fails', async () => {

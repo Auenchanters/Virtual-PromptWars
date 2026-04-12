@@ -3,7 +3,7 @@ process.env.GEMINI_API_KEY = 'test-gemini-key';
 process.env.FIREBASE_PROJECT_ID = 'test-project';
 process.env.FIREBASE_DATABASE_URL = 'https://test.firebaseio.com';
 
-const request = require('supertest');
+import request from 'supertest';
 
 jest.mock('../src/services/geminiService', () => ({
     chatWithGemini: jest.fn().mockResolvedValue('Mocked AI Response'),
@@ -17,7 +17,7 @@ jest.mock('../src/services/firestoreService', () => ({
     getQueueData: jest.fn().mockResolvedValue([{ id: 'gate-1', type: 'gate', waitTimeMinutes: 10 }]),
 }));
 
-const app = require('../src/app');
+import app from '../src/app';
 
 describe('POST /api/gemini/chat', () => {
     it('returns 200 with AI reply for valid message', async () => {

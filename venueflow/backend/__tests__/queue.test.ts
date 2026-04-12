@@ -3,7 +3,7 @@ process.env.GEMINI_API_KEY = 'test-gemini-key';
 process.env.FIREBASE_PROJECT_ID = 'test-project';
 process.env.FIREBASE_DATABASE_URL = 'https://test.firebaseio.com';
 
-const request = require('supertest');
+import request from 'supertest';
 
 jest.mock('../src/services/firestoreService', () => ({
     getCrowdData: jest.fn().mockResolvedValue([{ section: '101', density: 'HIGH' }]),
@@ -21,7 +21,7 @@ jest.mock('../src/services/geminiService', () => ({
     generateCrowdForecast: jest.fn().mockResolvedValue('Mocked'),
 }));
 
-const app = require('../src/app');
+import app from '../src/app';
 
 describe('Queue API', () => {
     it('GET /api/queue returns 200 with array of queues', async () => {
@@ -40,7 +40,7 @@ describe('Queue API', () => {
 
     it('GET /api/queue returns numeric wait times', async () => {
         const response = await request(app).get('/api/queue');
-        response.body.forEach(queue => {
+        response.body.forEach((queue: { waitTimeMinutes: number }) => {
             expect(typeof queue.waitTimeMinutes).toBe('number');
             expect(queue.waitTimeMinutes).toBeGreaterThanOrEqual(0);
         });
@@ -48,7 +48,7 @@ describe('Queue API', () => {
 
     it('GET /api/queue returns multiple queue types', async () => {
         const response = await request(app).get('/api/queue');
-        const types = response.body.map(q => q.type);
+        const types = response.body.map((q: { type: string }) => q.type);
         expect(types).toContain('gate');
         expect(types).toContain('concessions');
     });

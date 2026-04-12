@@ -3,7 +3,7 @@ process.env.GEMINI_API_KEY = 'test-gemini-key';
 process.env.FIREBASE_PROJECT_ID = 'test-project';
 process.env.FIREBASE_DATABASE_URL = 'https://test.firebaseio.com';
 
-const request = require('supertest');
+import request from 'supertest';
 
 jest.mock('../src/services/firestoreService', () => ({
     getCrowdData: jest.fn().mockResolvedValue([{ section: '101', density: 'HIGH' }]),
@@ -21,7 +21,7 @@ jest.mock('../src/services/realtimeService', () => ({
     broadcastMessage: jest.fn().mockResolvedValue(undefined),
 }));
 
-const app = require('../src/app');
+import app from '../src/app';
 
 describe('Security hardening', () => {
     it('sets strict-transport-security, content-type-options and referrer-policy headers', async () => {

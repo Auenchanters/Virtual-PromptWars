@@ -1,6 +1,6 @@
-const express = require('express');
-const request = require('supertest');
-const rateLimit = require('express-rate-limit');
+import express, { Request, Response } from 'express';
+import request from 'supertest';
+import rateLimit from 'express-rate-limit';
 
 function buildAppWithTightLimiter() {
     const app = express();
@@ -12,7 +12,7 @@ function buildAppWithTightLimiter() {
         message: { error: 'Too many requests', status: 429 },
     });
     app.use(limiter);
-    app.get('/ping', (req, res) => res.status(200).json({ ok: true }));
+    app.get('/ping', (req: Request, res: Response) => res.status(200).json({ ok: true }));
     return app;
 }
 

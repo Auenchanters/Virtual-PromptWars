@@ -1,16 +1,20 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { axe, toHaveNoViolations } from 'jest-axe';
 import Navbar from '../src/components/Navbar';
 import CrowdHeatmap from '../src/components/CrowdHeatmap';
 import QueueStatus from '../src/components/QueueStatus';
 import GeminiChatbot from '../src/components/GeminiChatbot';
 import ItineraryPlanner from '../src/components/ItineraryPlanner';
+import AccessibleAlert from '../src/components/AccessibleAlert';
 import * as hooks from '../src/hooks/useGemini';
 import * as api from '../src/services/api';
 
 jest.mock('../src/hooks/useGemini');
 jest.mock('../src/services/api');
+
+expect.extend(toHaveNoViolations);
 
 describe('Accessibility landmarks and semantics', () => {
     it('Navbar exposes a labeled navigation landmark with list semantics', () => {
@@ -69,4 +73,43 @@ describe('Accessibility landmarks and semantics', () => {
         expect(input).toHaveAttribute('aria-invalid', 'true');
         expect(input).toHaveAttribute('aria-describedby', 'section-error');
     });
+});
+
+const mockQueueData = [
+    { id: 'g1', type: 'gate', waitTimeMinutes: 5 },
+    { id: 'c1', type: 'concessions', waitTimeMinutes: 8 },
+];
+
+const componentCases = [
+    {
+        name: 'Navbar',
+        element: (
+            <MemoryRouter>
+                <Navbar />
+            </MemoryRouter>
+        ),
+    },
+    {
+        name: 'QueueStatus',
+        element: <QueueStatus queues={mockQueueData} />,
+    },
+    {
+        name: 'ItineraryPlanner',
+        element: <ItineraryPlanner />,
+    },
+    {
+        name: 'AccessibleAlert',
+        element: <AccessibleAlert message="Gate 7 is now open" />,
+    },
+];
+
+describe('Automated a11y audits via jest-axe', () => {
+    it.each(componentCases)(
+        '$name has no a11y violations',
+        async ({ element }) => {
+            const { container } = render(element);
+            const results = await axe(container);
+            expect(results).toHaveNoViolations();
+        }
+    );
 });

@@ -1,7 +1,7 @@
-const express = require('express');
-const request = require('supertest');
-const { errorHandler } = require('../src/middleware/errorHandler');
-const { requestId } = require('../src/middleware/requestId');
+import express, { Request, Response, NextFunction } from 'express';
+import request from 'supertest';
+import { errorHandler } from '../src/middleware/errorHandler';
+import { requestId } from '../src/middleware/requestId';
 
 function buildTestApp() {
     const app = express();
@@ -9,8 +9,8 @@ function buildTestApp() {
     app.get('/boom', () => {
         throw new Error('synthetic failure');
     });
-    app.get('/client-error', (req, res, next) => {
-        const err = new Error('bad request');
+    app.get('/client-error', (req: Request, res: Response, next: NextFunction) => {
+        const err = new Error('bad request') as Error & { status: number };
         err.status = 400;
         next(err);
     });

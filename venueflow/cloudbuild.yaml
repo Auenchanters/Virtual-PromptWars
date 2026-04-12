@@ -23,5 +23,27 @@ steps:
       - '--allow-unauthenticated'
       - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest'
 
+  # Install frontend dependencies
+  - name: 'node:18-alpine'
+    entrypoint: npm
+    args: ['ci']
+    dir: 'frontend'
+
+  # Build frontend for production
+  - name: 'node:18-alpine'
+    entrypoint: npm
+    args: ['run', 'build']
+    dir: 'frontend'
+    env:
+      - 'VITE_API_BASE_URL=https://venueflow-backend-608358746679.asia-south1.run.app/api'
+      - 'VITE_GOOGLE_MAPS_API_KEY=${_GOOGLE_MAPS_API_KEY}'
+
+  # Deploy frontend to Firebase Hosting
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - 'npm install -g firebase-tools && firebase deploy --only hosting --project $PROJECT_ID'
+
 images:
   - 'gcr.io/$PROJECT_ID/venueflow-backend'

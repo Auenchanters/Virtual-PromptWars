@@ -3,14 +3,14 @@ process.env.GEMINI_API_KEY = 'test-gemini-key';
 process.env.FIREBASE_PROJECT_ID = 'test-project';
 process.env.FIREBASE_DATABASE_URL = 'https://test.firebaseio.com';
 
-const request = require('supertest');
+import request from 'supertest';
 
 jest.mock('../src/services/firestoreService', () => ({
     getCrowdData: jest.fn().mockResolvedValue([]),
     getQueueData: jest.fn().mockResolvedValue([]),
 }));
 
-const app = require('../src/app');
+import app from '../src/app';
 
 describe('GET /health', () => {
     it('returns 200 with healthy status', async () => {

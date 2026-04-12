@@ -9,18 +9,7 @@ import {
     DENSITY_MEDIUM,
     DENSITY_HIGH,
 } from '../config/constants';
-
-interface CrowdSection {
-    id: string;
-    section: string;
-    density: string;
-}
-
-interface QueueItem {
-    id: string;
-    type: string;
-    waitTimeMinutes: number;
-}
+import { CrowdSection, QueueItem } from '../types';
 
 const cache = new NodeCache({ stdTTL: CACHE_TTL_SECONDS });
 

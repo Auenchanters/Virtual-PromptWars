@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import 'dotenv/config';
+import './config/env';
 
 import { logger } from './utils/logger';
 import { REQUEST_BODY_LIMIT } from './config/constants';
@@ -16,13 +17,6 @@ import queueRoutes from './routes/queue';
 import geminiRoutes from './routes/gemini';
 import staffRoutes from './routes/staff';
 
-const REQUIRED_ENV_VARS = ['GEMINI_API_KEY', 'FIREBASE_PROJECT_ID', 'FIREBASE_DATABASE_URL'];
-const missingVars = REQUIRED_ENV_VARS.filter(v => !process.env[v]);
-if (missingVars.length > 0) {
-    logger.warn('Missing environment variables; some features may not work', {
-        missing: missingVars,
-    });
-}
 if (!process.env.STAFF_API_KEY) {
     logger.warn('STAFF_API_KEY not set; staff broadcast endpoint will return 503');
 }
@@ -90,10 +84,3 @@ app.get('/health', (req: Request, res: Response) => {
 app.use(errorHandler);
 
 export default app;
-
-if (require.main === module) {
-    const PORT = Number(process.env.PORT) || 8080;
-    app.listen(PORT, '0.0.0.0', () => {
-        logger.info('VenueFlow server started', { host: '0.0.0.0', port: PORT });
-    });
-}

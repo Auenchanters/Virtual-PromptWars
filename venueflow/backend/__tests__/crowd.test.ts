@@ -3,7 +3,7 @@ process.env.GEMINI_API_KEY = 'test-gemini-key';
 process.env.FIREBASE_PROJECT_ID = 'test-project';
 process.env.FIREBASE_DATABASE_URL = 'https://test.firebaseio.com';
 
-const request = require('supertest');
+import request from 'supertest';
 
 jest.mock('../src/services/firestoreService', () => ({
     getCrowdData: jest.fn().mockResolvedValue([
@@ -23,7 +23,7 @@ jest.mock('../src/services/geminiService', () => ({
     generateCrowdForecast: jest.fn().mockResolvedValue('Expect moderate crowds; try section 103.'),
 }));
 
-const app = require('../src/app');
+import app from '../src/app';
 
 describe('Crowd API', () => {
     it('GET /api/crowd returns 200 with array of sections', async () => {
@@ -42,7 +42,7 @@ describe('Crowd API', () => {
     it('GET /api/crowd returns valid density values', async () => {
         const response = await request(app).get('/api/crowd');
         const valid = ['LOW', 'MEDIUM', 'HIGH'];
-        response.body.forEach(section => {
+        response.body.forEach((section: { density: string }) => {
             expect(valid).toContain(section.density);
         });
     });

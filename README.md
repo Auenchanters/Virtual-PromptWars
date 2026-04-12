@@ -10,6 +10,7 @@ VenueFlow is an AI-powered smart stadium experience platform that solves the thr
 
 ## Live Demo
 
+- **Frontend**: _Deploy to Firebase Hosting (see Deployment section below)_
 - **Backend API**: https://venueflow-backend-608358746679.asia-south1.run.app
 - **Health Check**: https://venueflow-backend-608358746679.asia-south1.run.app/health
 
@@ -65,28 +66,41 @@ Virtual-PromptWars/
 └── venueflow/
     ├── backend/
     │   ├── src/
-    │   │   ├── app.js              # Express app entry point
+    │   │   ├── app.ts              # Express app (no listen — testable)
+    │   │   ├── server.ts           # Server entry point (app.listen)
     │   │   ├── config/
+    │   │   │   ├── env.ts          # Zod-validated environment variables
     │   │   │   └── firebaseAdmin.js # Firebase Admin SDK init
     │   │   ├── middleware/
-    │   │   │   ├── errorHandler.js  # Global error handler
-    │   │   │   └── rateLimiter.js   # 100 req/15min per IP
+    │   │   │   ├── errorHandler.ts  # Global error handler
+    │   │   │   ├── rateLimiter.ts   # 100 req/15min per IP
+    │   │   │   ├── requestId.ts     # X-Request-Id tracing
+    │   │   │   ├── requireJson.ts   # Content-Type enforcement
+    │   │   │   └── requireStaffKey.ts # Staff auth (timing-safe)
     │   │   ├── routes/
-    │   │   │   ├── crowd.js         # GET /api/crowd
-    │   │   │   ├── queue.js         # GET /api/queue
-    │   │   │   ├── gemini.js        # POST /api/gemini/chat|itinerary
-    │   │   │   └── staff.js         # POST /api/staff/broadcast
-    │   │   └── services/
-    │   │       ├── firestoreService.js   # Crowd + queue data (cached)
-    │   │       ├── geminiService.js      # Gemini AI integration
-    │   │       └── realtimeService.js    # Firebase RTDB broadcasts
-    │   ├── __tests__/               # Jest test suites
+    │   │   │   ├── crowd.ts         # GET /api/crowd
+    │   │   │   ├── queue.ts         # GET /api/queue
+    │   │   │   ├── gemini.ts        # POST /api/gemini/chat|itinerary
+    │   │   │   └── staff.ts         # POST /api/staff/broadcast
+    │   │   ├── services/
+    │   │   │   ├── firestoreService.ts   # Crowd + queue data (cached)
+    │   │   │   ├── geminiService.ts      # Gemini AI integration
+    │   │   │   └── realtimeService.ts    # Firebase RTDB broadcasts
+    │   │   ├── types/
+    │   │   │   └── index.ts         # Shared TypeScript interfaces
+    │   │   ├── utils/
+    │   │   │   ├── sanitize.ts      # XSS sanitization (xss library)
+    │   │   │   └── logger.js        # Structured JSON logging
+    │   │   └── scripts/
+    │   │       └── seedFirestore.ts  # Populate demo data
+    │   ├── __tests__/               # Jest test suites (TypeScript)
     │   └── Dockerfile
     └── frontend/
         └── src/
             ├── components/          # React UI components
             ├── pages/               # Page-level components
             ├── hooks/               # Custom React hooks
+            ├── types/               # Shared TypeScript interfaces
             └── services/            # API service layer
 ```
 
@@ -117,6 +131,8 @@ npm run dev
 
 ## Environment Variables
 
+### Backend
+
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 FIREBASE_PROJECT_ID=your_project_id
@@ -124,9 +140,29 @@ FIREBASE_CLIENT_EMAIL=your_service_account_email
 FIREBASE_PRIVATE_KEY=your_private_key
 FIREBASE_DATABASE_URL=https://your-project.firebaseio.com
 FRONTEND_URL=https://your-frontend-domain.com
+STAFF_API_KEY=your_shared_staff_secret
 ```
 
+### Frontend
+
+```env
+VITE_API_BASE_URL=https://your-backend-url.run.app/api
+VITE_GOOGLE_MAPS_API_KEY=your_maps_api_key
+VITE_STAFF_API_KEY=your_shared_staff_secret
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_DATABASE_URL=https://your-project.firebaseio.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+> **Note:** `VITE_GOOGLE_MAPS_API_KEY` must be set for the Stadium Map heatmap overlay to render. Restrict the key to your frontend domain in production via the Google Cloud Console.
+
 ## Deployment
+
+### Backend (Cloud Run)
 
 ```bash
 cd venueflow/backend
@@ -136,12 +172,28 @@ gcloud run deploy venueflow-backend \
   --allow-unauthenticated
 ```
 
+### Frontend (Firebase Hosting)
+
+```bash
+cd venueflow/frontend
+npm run build
+cd ..
+firebase deploy --only hosting
+```
+
 ## Testing
 
 ```bash
 cd venueflow/backend
-npm test                 # Run all tests
-npm run test:coverage    # Run with coverage report
+npm test                 # Run all TypeScript test suites
+npm run test:coverage    # Run with coverage report (85% global, 95% routes/utils)
+```
+
+### Seed Demo Data
+
+```bash
+cd venueflow/backend
+npm run seed             # Populate Firestore with 12 crowd sections + 10 queue entries
 ```
 
 ## Security
@@ -150,9 +202,14 @@ npm run test:coverage    # Run with coverage report
 - Helmet.js with full CSP, HSTS, and referrer policy configuration
 - Express rate limiting: 100 requests per 15 minutes per IP
 - Request body size limit: 10kb
-- Input validation and sanitization via `express-validator` on all POST routes
+- Input validation via Zod schemas with XSS sanitization (`xss` library) on all POST routes
+- Environment variables validated at startup via Zod (`src/config/env.ts`) — fails fast on misconfiguration
 - CORS restricted to explicit frontend origin
-- Startup environment variable validation — fails fast if required keys are missing
+- `crypto.timingSafeEqual` for staff key comparison (prevents timing attacks)
+
+### Prototype Limitations
+
+- **Staff authentication** uses a shared `X-Staff-Key` secret compared with `crypto.timingSafeEqual`. In a production deployment, this would be replaced with Firebase Auth ID-token verification. See `.env.example` for configuration.
 
 ## Accessibility
 

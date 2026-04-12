@@ -20,16 +20,15 @@ jest.mock('node-cache', () => {
     }));
 });
 
-const { getCrowdData, getQueueData } = require('../src/services/firestoreService');
+import { getCrowdData, getQueueData } from '../src/services/firestoreService';
 
 beforeEach(() => {
     jest.clearAllMocks();
 });
 
-// Helper to create a Firestore-like snapshot
-function makeSnapshot(docs) {
+function makeSnapshot(docs: Array<{ id: string; data: Record<string, unknown> }>) {
     return {
-        forEach(cb) {
+        forEach(cb: (doc: { id: string; data: () => Record<string, unknown> }) => void) {
             docs.forEach(d => cb({ id: d.id, data: () => d.data }));
         },
     };

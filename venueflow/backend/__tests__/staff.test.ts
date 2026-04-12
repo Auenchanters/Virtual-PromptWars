@@ -3,7 +3,7 @@ process.env.GEMINI_API_KEY = 'test-gemini-key';
 process.env.FIREBASE_PROJECT_ID = 'test-project';
 process.env.FIREBASE_DATABASE_URL = 'https://test.firebaseio.com';
 
-const request = require('supertest');
+import request from 'supertest';
 
 jest.mock('../src/services/realtimeService', () => ({
     broadcastMessage: jest.fn().mockResolvedValue(undefined),
@@ -21,7 +21,7 @@ jest.mock('../src/services/geminiService', () => ({
     generateCrowdForecast: jest.fn().mockResolvedValue('Mocked forecast'),
 }));
 
-const app = require('../src/app');
+import app from '../src/app';
 
 const VALID_BODY = { announcement: 'Gate 7 is now open for entry' };
 const STAFF_KEY = { 'X-Staff-Key': 'test-staff-key' };
