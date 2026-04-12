@@ -7,7 +7,7 @@ jest.mock('../src/services/api');
 
 function Probe({ onState }: { onState: (state: ReturnType<typeof useCrowdData>) => void }) {
     const state = useCrowdData();
-    React.useEffect(() => onState(state), [state, onState]);
+    React.useEffect(() => { onState(state); }, [state, onState]);
     return null;
 }
 
