@@ -1,12 +1,11 @@
-import { Request, Response, NextFunction } from 'express';
+import { ErrorRequestHandler } from 'express';
 import { logger } from '../utils/logger';
 
 /**
  * Global error handling middleware. Returns a sanitized JSON envelope
  * and never leaks stack traces to the client; full error is logged server-side.
  */
-// eslint-disable-next-line no-unused-vars
-const errorHandler = (err: { status?: number; message?: string }, req: Request, res: Response, next: NextFunction): void => {
+const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     const status = err.status || 500;
     logger.error('Unhandled error', {
         requestId: req.id,

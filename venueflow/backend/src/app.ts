@@ -6,6 +6,15 @@ import 'dotenv/config';
 
 import { logger } from './utils/logger';
 import { REQUEST_BODY_LIMIT } from './config/constants';
+import { readLimiter, writeLimiter } from './middleware/rateLimiter';
+import { errorHandler } from './middleware/errorHandler';
+import { requestId } from './middleware/requestId';
+import { requireJson } from './middleware/requireJson';
+
+import crowdRoutes from './routes/crowd';
+import queueRoutes from './routes/queue';
+import geminiRoutes from './routes/gemini';
+import staffRoutes from './routes/staff';
 
 const REQUIRED_ENV_VARS = ['GEMINI_API_KEY', 'FIREBASE_PROJECT_ID', 'FIREBASE_DATABASE_URL'];
 const missingVars = REQUIRED_ENV_VARS.filter(v => !process.env[v]);
@@ -17,16 +26,6 @@ if (missingVars.length > 0) {
 if (!process.env.STAFF_API_KEY) {
     logger.warn('STAFF_API_KEY not set; staff broadcast endpoint will return 503');
 }
-
-import { readLimiter, writeLimiter } from './middleware/rateLimiter';
-import { errorHandler } from './middleware/errorHandler';
-import { requestId } from './middleware/requestId';
-import { requireJson } from './middleware/requireJson';
-
-import crowdRoutes from './routes/crowd';
-import queueRoutes from './routes/queue';
-import geminiRoutes from './routes/gemini';
-import staffRoutes from './routes/staff';
 
 const app = express();
 
