@@ -1,19 +1,21 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { logger } = require('../utils/logger');
 
-const apiKey = process.env.GEMINI_API_KEY;
+const apiKey: string = process.env.GEMINI_API_KEY as string;
 if (!apiKey) throw new Error('GEMINI_API_KEY environment variable is required');
 const genAI = new GoogleGenerativeAI(apiKey);
 const MODEL_NAME = 'gemini-2.0-flash';
 
-function getModel() {
+function getModel(): any {
     return genAI.getGenerativeModel({ model: MODEL_NAME });
 }
 
 /**
  * Conversational venue assistant with grounded stadium context.
+ * @param {string} userMessage - The user's question or message to the venue assistant
+ * @returns {Promise<string>} The AI-generated response from the venue assistant
  */
-async function chatWithGemini(userMessage) {
+async function chatWithGemini(userMessage: string): Promise<string> {
     if (!userMessage) throw new Error('Message is required.');
 
     try {
@@ -24,7 +26,7 @@ async function chatWithGemini(userMessage) {
             `venue, vegan options at Stand 12. Question: ${userMessage}`;
         const result = await model.generateContent(prompt);
         return result.response.text();
-    } catch (err) {
+    } catch (err: any) {
         logger.error('Gemini chat error', { error: err.message });
         throw err;
     }
@@ -32,8 +34,10 @@ async function chatWithGemini(userMessage) {
 
 /**
  * Friendly summary of current crowd density for attendees.
+ * @param {unknown[]} crowdData - Array of crowd density data objects for stadium sections
+ * @returns {Promise<string>} A friendly one-sentence summary of current crowd conditions
  */
-async function generateCrowdSummary(crowdData) {
+async function generateCrowdSummary(crowdData: unknown[]): Promise<string> {
     try {
         const model = getModel();
         const prompt =
@@ -41,7 +45,7 @@ async function generateCrowdSummary(crowdData) {
             JSON.stringify(crowdData);
         const result = await model.generateContent(prompt);
         return result.response.text();
-    } catch (err) {
+    } catch (err: any) {
         logger.error('Gemini crowd summary error', { error: err.message });
         return 'Crowd data is currently being updated.';
     }
@@ -51,8 +55,11 @@ async function generateCrowdSummary(crowdData) {
  * Predictive 15-minute crowd forecast. Takes current crowd + queue snapshots
  * and asks Gemini to recommend low-density alternative sections so attendees
  * can self-redistribute before bottlenecks form.
+ * @param {unknown[]} crowdData - Array of current crowd density data objects
+ * @param {unknown[]} queueData - Array of current queue wait time data objects
+ * @returns {Promise<string>} A short 15-minute crowd forecast with recommendations
  */
-async function generateCrowdForecast(crowdData, queueData) {
+async function generateCrowdForecast(crowdData: unknown[], queueData: unknown[]): Promise<string> {
     try {
         const model = getModel();
         const prompt =
@@ -63,7 +70,7 @@ async function generateCrowdForecast(crowdData, queueData) {
             `Crowd: ${JSON.stringify(crowdData)}\nQueues: ${JSON.stringify(queueData)}`;
         const result = await model.generateContent(prompt);
         return result.response.text();
-    } catch (err) {
+    } catch (err: any) {
         logger.error('Gemini forecast error', { error: err.message });
         return 'Crowd forecast is temporarily unavailable. Please check back in a moment.';
     }
@@ -73,8 +80,11 @@ async function generateCrowdForecast(crowdData, queueData) {
  * Crowd-aware itinerary generator — when current density is HIGH the prompt
  * asks Gemini to suggest lower-density alternatives so attendees avoid
  * bottlenecks proactively.
+ * @param {string} section - The stadium section the attendee is sitting in
+ * @param {unknown[]} crowdData - Optional array of live crowd density data objects
+ * @returns {Promise<string>} A personalized itinerary with arrival time, gate, and concessions
  */
-async function generateItinerary(section, crowdData = []) {
+async function generateItinerary(section: string, crowdData: unknown[] = []): Promise<string> {
     if (!section) throw new Error('Section is required.');
 
     try {
@@ -89,7 +99,7 @@ async function generateItinerary(section, crowdData = []) {
             `${section}. Suggest arrival time, best gate, and nearest concessions. ${crowdContext}`;
         const result = await model.generateContent(prompt);
         return result.response.text();
-    } catch (err) {
+    } catch (err: any) {
         logger.error('Gemini itinerary error', { error: err.message });
         throw err;
     }

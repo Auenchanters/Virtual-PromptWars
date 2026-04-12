@@ -22,9 +22,12 @@
     "node-cache": "^5.1.2"
   },
   "devDependencies": {
+    "@types/node": "^20.19.39",
     "eslint": "^8.54.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.1",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.4.9",
+    "typescript": "^6.0.2"
   }
 }

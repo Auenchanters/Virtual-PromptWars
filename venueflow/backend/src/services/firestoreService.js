@@ -28,6 +28,7 @@ const FALLBACK_QUEUES = [
 /**
  * Retrieves crowd heatmap data from Firestore.
  * Results are cached to reduce database reads and network latency.
+ * @returns {Promise<object[]>} Array of crowd density objects with section and density fields
  */
 async function getCrowdData() {
     const cached = cache.get('crowd_data');
@@ -51,6 +52,7 @@ async function getCrowdData() {
 
 /**
  * Retrieves queue wait times from Firestore.
+ * @returns {Promise<object[]>} Array of queue wait time objects with type and waitTimeMinutes fields
  */
 async function getQueueData() {
     const cached = cache.get('queue_data');
