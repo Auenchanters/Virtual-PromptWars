@@ -1,6 +1,6 @@
-const { rtdb } = require('../config/firebaseAdmin');
-const { logger } = require('../utils/logger');
-const { RTDB_ANNOUNCEMENTS } = require('../config/constants');
+import { rtdb } from '../config/firebaseAdmin';
+import { logger } from '../utils/logger';
+import { RTDB_ANNOUNCEMENTS } from '../config/constants';
 
 /**
  * Broadcasts an announcement to the Firebase Realtime Database so that
@@ -8,7 +8,7 @@ const { RTDB_ANNOUNCEMENTS } = require('../config/constants');
  * @param {string} announcement - The announcement text to broadcast to all connected clients
  * @returns {Promise<void>} Resolves when the announcement has been pushed to RTDB
  */
-async function broadcastMessage(announcement) {
+async function broadcastMessage(announcement: string): Promise<void> {
     if (!announcement) throw new Error('Announcement required.');
 
     try {
@@ -17,10 +17,10 @@ async function broadcastMessage(announcement) {
             text: announcement,
             time: Date.now(),
         });
-    } catch (err) {
-        logger.error('Error broadcasting message to RTDB', { error: err.message });
+    } catch (err: unknown) {
+        logger.error('Error broadcasting message to RTDB', { error: (err instanceof Error ? err.message : String(err)) });
         throw err;
     }
 }
 
-module.exports = { broadcastMessage };
+export { broadcastMessage };

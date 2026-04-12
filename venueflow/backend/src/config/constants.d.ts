@@ -1,0 +1,16 @@
+export declare const CACHE_TTL_SECONDS: number;
+export declare const FORECAST_CACHE_TTL_SECONDS: number;
+export declare const MAX_MESSAGE_LENGTH: number;
+export declare const MAX_SECTION_LENGTH: number;
+export declare const MAX_ANNOUNCEMENT_LENGTH: number;
+export declare const BROADCAST_HISTORY_LIMIT: number;
+export declare const READ_RATE_LIMIT_MAX: number;
+export declare const WRITE_RATE_LIMIT_MAX: number;
+export declare const RATE_LIMIT_WINDOW_MS: number;
+export declare const REQUEST_BODY_LIMIT: string;
+export declare const COLLECTION_CROWD: string;
+export declare const COLLECTION_QUEUES: string;
+export declare const RTDB_ANNOUNCEMENTS: string;
+export declare const DENSITY_LOW: string;
+export declare const DENSITY_MEDIUM: string;
+export declare const DENSITY_HIGH: string;

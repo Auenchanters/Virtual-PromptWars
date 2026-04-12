@@ -7,7 +7,7 @@
     "dev": "nodemon src/app.js",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src/ --ext .js"
+    "lint": "eslint src/ --ext .js,.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

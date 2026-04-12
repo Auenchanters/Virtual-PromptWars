@@ -1,12 +1,13 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { logger } = require('../utils/logger');
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import type { GenerativeModel } from '@google/generative-ai';
+import { logger } from '../utils/logger';
 
 const apiKey: string = process.env.GEMINI_API_KEY as string;
 if (!apiKey) throw new Error('GEMINI_API_KEY environment variable is required');
 const genAI = new GoogleGenerativeAI(apiKey);
 const MODEL_NAME = 'gemini-2.0-flash';
 
-function getModel(): any {
+function getModel(): GenerativeModel {
     return genAI.getGenerativeModel({ model: MODEL_NAME });
 }
 
@@ -26,8 +27,8 @@ async function chatWithGemini(userMessage: string): Promise<string> {
             `venue, vegan options at Stand 12. Question: ${userMessage}`;
         const result = await model.generateContent(prompt);
         return result.response.text();
-    } catch (err: any) {
-        logger.error('Gemini chat error', { error: err.message });
+    } catch (err: unknown) {
+        logger.error('Gemini chat error', { error: (err instanceof Error ? err.message : String(err)) });
         throw err;
     }
 }
@@ -45,8 +46,8 @@ async function generateCrowdSummary(crowdData: unknown[]): Promise<string> {
             JSON.stringify(crowdData);
         const result = await model.generateContent(prompt);
         return result.response.text();
-    } catch (err: any) {
-        logger.error('Gemini crowd summary error', { error: err.message });
+    } catch (err: unknown) {
+        logger.error('Gemini crowd summary error', { error: (err instanceof Error ? err.message : String(err)) });
         return 'Crowd data is currently being updated.';
     }
 }
@@ -70,8 +71,8 @@ async function generateCrowdForecast(crowdData: unknown[], queueData: unknown[])
             `Crowd: ${JSON.stringify(crowdData)}\nQueues: ${JSON.stringify(queueData)}`;
         const result = await model.generateContent(prompt);
         return result.response.text();
-    } catch (err: any) {
-        logger.error('Gemini forecast error', { error: err.message });
+    } catch (err: unknown) {
+        logger.error('Gemini forecast error', { error: (err instanceof Error ? err.message : String(err)) });
         return 'Crowd forecast is temporarily unavailable. Please check back in a moment.';
     }
 }
@@ -99,15 +100,10 @@ async function generateItinerary(section: string, crowdData: unknown[] = []): Pr
             `${section}. Suggest arrival time, best gate, and nearest concessions. ${crowdContext}`;
         const result = await model.generateContent(prompt);
         return result.response.text();
-    } catch (err: any) {
-        logger.error('Gemini itinerary error', { error: err.message });
+    } catch (err: unknown) {
+        logger.error('Gemini itinerary error', { error: (err instanceof Error ? err.message : String(err)) });
         throw err;
     }
 }
 
-module.exports = {
-    chatWithGemini,
-    generateCrowdSummary,
-    generateCrowdForecast,
-    generateItinerary,
-};
+export { chatWithGemini, generateCrowdSummary, generateCrowdForecast, generateItinerary };
