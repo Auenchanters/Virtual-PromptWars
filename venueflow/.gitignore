@@ -9,3 +9,7 @@ coverage/
 .env.test.local
 .env.production.local
 .DS_Store
+
+# Built frontend assets contain baked-in API keys — never commit to git.
+# These are copied to backend/public/ before deploy and included via .gcloudignore.
+backend/public/
