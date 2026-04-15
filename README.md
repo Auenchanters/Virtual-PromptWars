@@ -21,6 +21,7 @@ VenueFlow is an AI-powered smart stadium experience platform that solves the thr
 | **Real-Time Coordination** | Staff Broadcast Feed | Staff push alerts through Firebase Realtime Database, streamed to every connected attendee |
 | **Attendee Guidance** | Gemini AI Chatbot | Natural-language Q&A about gates, food, vegan options, and facilities (grounded prompt) |
 | **Personalisation** | AI Itinerary & 15-min Forecast | Gemini produces a crowd-aware plan per seat section and a short predictive outlook for the next 15 minutes |
+| **Operational Analytics** | Cloud Functions + Cloud Logging | Every crowd density change and staff broadcast is captured as a structured log event for post-event analysis |
 
 ## Approach and Logic
 
@@ -29,6 +30,7 @@ Large-venue pain points are almost always caused by **information asymmetry**: a
 1. **Firestore** acts as the source of truth for crowd densities and queue wait times. A lightweight server cache (30s TTL) keeps reads cheap and responsive without starving the live signal.
 2. **Firebase Realtime Database** carries operational push messages from staff (gate openings, delays, medical alerts) so coordination is instant rather than polled.
 3. **Gemini 2.5 Flash** turns raw data into human guidance — summarising density, predicting the next 15 minutes, answering venue questions, and generating itineraries that actively route attendees away from HIGH-density sections.
+4. **Firebase Cloud Functions (gen2)** react to every Firestore write in real time, emitting structured analytics events to **Google Cloud Logging** so venue operators can query density patterns and audit every staff broadcast after the event.
 
 The front-end renders the same state through three complementary views (heatmap grid, Google Maps overlay, queue list) so attendees can self-serve regardless of how they think spatially. Every surface is screen-reader friendly and keyboard navigable.
 
@@ -43,6 +45,7 @@ The front-end renders the same state through three complementary views (heatmap 
 4. The floating **Venue Assistant** chatbot answers arbitrary questions grounded in stadium context (entry gates, vegan stands, etc.).
 5. The **Itinerary Planner** asks for the user's seat section and returns a Gemini-generated schedule — if the section is HIGH density, Gemini is explicitly prompted to suggest a quieter route.
 6. Operations staff open the **Staff** page, authenticate with the shared `X-Staff-Key` header, and push broadcasts via Realtime DB. Every attendee browser receives them instantly.
+7. **In the background**, every crowd update and staff broadcast triggers a Firebase Cloud Function that writes a structured log entry to Google Cloud Logging — giving venue operators a full, queryable audit trail after the event.
 
 ## Architecture
 
@@ -56,26 +59,33 @@ Cloud Run Backend (Node.js 18 + Express + TypeScript)
  Gemini      Firestore      Realtime DB
  2.5 Flash   (crowd,        (staff
  (AI)         queues)        broadcasts)
-    │
-    ▼
-Google Maps JavaScript API
-(density marker overlay)
+    │            │              │
+    ▼            ▼──────────────┘
+Google Maps   Cloud Functions (gen2)
+JS API        (Firestore triggers)
+                   │
+                   ▼
+           Google Cloud Logging
+           (structured audit trail)
 ```
 
 ## Google Services Used
 
-| Service | Purpose | Usage |
-|---------|---------|-------|
-| **Gemini API (`gemini-2.5-flash`)** | Chatbot, crowd summary, 15-min forecast, itinerary | 4 distinct prompt paths in `geminiService.ts` |
-| **Google Maps JavaScript API** | Stadium map with density-coloured markers | `StadiumMap.tsx` via `@react-google-maps/api` |
-| **Firebase Firestore** | Crowd density + queue wait-time data | Cached reads (30s TTL) through `firestoreService.ts` |
-| **Firebase Realtime Database** | Staff broadcast messages | Live push to attendees via `realtimeService.ts` |
-| **Google Cloud Run** | Containerised backend deployment | Auto-scaling (0–10 instances), deployed via Cloud Build |
+| Service | Role | Where in Code |
+|---------|------|---------------|
+| **Gemini API (`gemini-2.5-flash`)** | Chatbot · crowd summary · 15-min forecast · itinerary planner | `backend/src/services/geminiService.ts` — 4 distinct prompt paths |
+| **Google Maps JavaScript API** | Interactive stadium floor plan with live density-coloured markers | `frontend/src/components/StadiumMap.tsx` via `@react-google-maps/api` |
+| **Firebase Firestore** | Crowd density + queue wait-time data store | `backend/src/services/firestoreService.ts` — TTL-cached reads (30 s) |
+| **Firebase Realtime Database** | Instant staff broadcast push to all attendees | `backend/src/services/realtimeService.ts` — fan-out writes, streamed to frontend |
+| **Google Cloud Run** | Auto-scaling containerised backend (0–10 instances) | `venueflow/cloudbuild.yaml` — Cloud Build → Artifact Registry → Cloud Run |
+| **Firebase Cloud Functions (gen2)** | Firestore triggers → emit structured analytics events on every crowd or staff write | `venueflow/functions/src/index.ts` — `onCrowdSectionUpdate` + `onStaffAnnouncementWritten` |
+| **Google Cloud Logging** | Structured operational audit trail — queryable density-change + broadcast history | Consumed automatically by Cloud Functions `logger.info(...)` calls |
 
 ## Tech Stack
 
 - **Backend:** Node.js 18, Express.js, TypeScript (strict mode), Zod, Helmet, `xss`, `express-rate-limit`, `node-cache`, `compression`
 - **Frontend:** React 18, TypeScript (strict), React Router v6, Tailwind CSS, Vite, `@react-google-maps/api`, Firebase SDK
+- **Functions:** Firebase Cloud Functions v4 (gen2), TypeScript, `firebase-functions` logger → Google Cloud Logging
 - **Testing:** Jest, ts-jest, Supertest (backend E2E), @testing-library/react, jest-axe (frontend a11y)
 - **DevOps:** Docker (multi-stage), Google Cloud Run, Cloud Build, Artifact Registry, Firebase Hosting
 
@@ -120,6 +130,11 @@ Virtual-PromptWars/
     │   │   └── scripts/seedFirestore.ts  # Populate demo data
     │   ├── __tests__/                    # Jest + Supertest suites
     │   └── Dockerfile
+    ├── functions/
+    │   ├── src/
+    │   │   └── index.ts                  # Cloud Functions (gen2) — Firestore triggers → Cloud Logging
+    │   ├── package.json
+    │   └── tsconfig.json
     └── frontend/
         ├── src/
         │   ├── App.tsx                   # Routing + skip-to-content link
@@ -146,7 +161,7 @@ Virtual-PromptWars/
 
 ### Prerequisites
 - Node.js v18+
-- Google Cloud Project with Cloud Run + Firestore enabled
+- Google Cloud Project with Cloud Run + Firestore + Cloud Functions enabled
 - Firebase Project with Realtime Database enabled
 - Gemini API Key from [Google AI Studio](https://aistudio.google.com)
 
@@ -165,6 +180,14 @@ npm run dev
 cd venueflow/frontend
 npm install
 npm run dev
+```
+
+### Cloud Functions (local emulator)
+
+```bash
+cd venueflow/functions
+npm install
+npm run serve   # starts Firebase Functions emulator
 ```
 
 ## Environment Variables
@@ -219,6 +242,15 @@ cd venueflow/frontend
 npm run build
 cd ..
 firebase deploy --only hosting
+```
+
+### Cloud Functions
+
+```bash
+cd venueflow/functions
+npm run build
+cd ..
+firebase deploy --only functions
 ```
 
 ## Testing
@@ -286,6 +318,7 @@ VenueFlow is built to **WCAG 2.1 AA** standards:
 - Staff authentication is a shared secret for this hackathon prototype; a production deployment would use Firebase Auth with role-based access control
 - Crowd density updates are treated as crowdsourced and cached server-side for 30 seconds to balance freshness against Firestore read cost
 - Gemini responses are best-effort — every AI call falls back to a friendly, static message if the upstream API fails so the UI never appears broken
+- Cloud Functions run in the same Firebase project; the `logger` output is automatically ingested by Google Cloud Logging with no additional configuration
 
 ## License
 
