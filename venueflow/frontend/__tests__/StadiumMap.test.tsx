@@ -1,14 +1,24 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import StadiumMap from '../src/components/StadiumMap';
+
+// Must be set before the component module is imported because StadiumMap.tsx
+// reads import.meta.env.VITE_GOOGLE_MAPS_API_KEY at module evaluation time.
+// The importMetaTransformer in jest.config.cjs exposes import.meta.env, so
+// assigning here is sufficient.
+(globalThis as Record<string, unknown>).__importMeta__ = {
+    env: { VITE_GOOGLE_MAPS_API_KEY: 'test-key' },
+};
 
 jest.mock('@react-google-maps/api', () => ({
     useJsApiLoader: jest.fn(),
     GoogleMap: ({ children }: { children?: React.ReactNode }) => (
         <div data-testid="google-map">{children}</div>
     ),
-    Marker: ({ title }: { title: string }) => <div data-testid="map-marker" title={title} />,
+    // Component imports MarkerF (not the deprecated Marker) — must match exactly.
+    MarkerF: ({ title }: { title: string }) => <div data-testid="map-marker" title={title} />,
 }));
+
+import StadiumMap from '../src/components/StadiumMap';
 
 const { useJsApiLoader } = jest.requireMock('@react-google-maps/api');
 

@@ -32,9 +32,13 @@ function getSectionPosition(section: string) {
   };
 }
 
-const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+// Warn rather than throw at module evaluation time so the component degrades
+// gracefully in non-Vite environments (Jest, SSR, Storybook) where Vite env
+// vars are not injected. The map will simply fail to load and show the
+// loadError fallback UI, which is already tested.
+const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined ?? '';
 if (!googleMapsApiKey) {
-  throw new Error('VITE_GOOGLE_MAPS_API_KEY is required in .env');
+  console.warn('StadiumMap: VITE_GOOGLE_MAPS_API_KEY is not set. The map will not load.');
 }
 
 const StadiumMap: React.FC<StadiumMapProps> = ({ crowd }) => {
