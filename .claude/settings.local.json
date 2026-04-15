@@ -20,7 +20,26 @@
       "Bash(curl -s -X POST https://venueflow-backend-608358746679.asia-south1.run.app/api/gemini/chat -H \"Content-Type: application/json\" -d '{\"message\":\"Where is the nearest exit?\"}')",
       "Bash(curl -s -X POST https://venueflow-backend-608358746679.asia-south1.run.app/api/gemini/itinerary -H 'Content-Type: application/json' -d '{\"section\":\"101\"}')",
       "Bash(curl -s https://venueflow-backend-608358746679.asia-south1.run.app/api/crowd/forecast)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(firebase apps:list --project virtual-promptwars)",
+      "Bash(firebase apps:create WEB \"VenueFlow Web\" --project virtual-promptwars)",
+      "Bash(firebase apps:sdkconfig WEB 1:608358746679:web:861580db060ee414818db2 --project virtual-promptwars)",
+      "Bash(curl -s https://venueflow-backend-608358746679.asia-south1.run.app/)",
+      "Bash(curl -s -X POST https://venueflow-backend-608358746679.asia-south1.run.app/api/gemini/chat -H \"Content-Type: application/json\" -d '{\"message\":\"Where are the exits?\"}')",
+      "Bash(curl -s -I https://venueflow-backend-608358746679.asia-south1.run.app/)",
+      "Bash(curl -s -I https://venueflow-backend-608358746679.asia-south1.run.app/assets/index-Bsn5x2Sb.js)",
+      "Bash(ls \"/c/Users/Utkarsh/Desktop/Project/Virtual PromptWars/Virtual-PromptWars/venueflow/frontend/postcss.config\"*)",
+      "Bash(grep -E \"\\(index|server|app|main\\)\\\\.ts$\")",
+      "Bash(curl -s -X POST -H \"Content-Type: application/json\" -d '{\"section\":\"112\"}' https://venueflow-backend-608358746679.asia-south1.run.app/api/gemini/itinerary)",
+      "Bash(curl -s -H \"Origin: https://venueflow-backend-608358746679.asia-south1.run.app\" -H \"Content-Type: application/json\" https://venueflow-backend-608358746679.asia-south1.run.app/api/crowd)",
+      "Bash(curl -s -H \"Origin: https://venueflow-backend-608358746679.asia-south1.run.app\" https://venueflow-backend-608358746679.asia-south1.run.app/api/crowd)",
+      "Bash(curl -s -H \"Origin: https://venueflow-backend-608358746679.asia-south1.run.app\" https://venueflow-backend-608358746679.asia-south1.run.app/api/queue)",
+      "Bash(curl -s -H \"Origin: https://venueflow-backend-608358746679.asia-south1.run.app\" https://venueflow-backend-608358746679.asia-south1.run.app/api/crowd/forecast)",
+      "Bash(curl -s -X POST -H \"Origin: https://venueflow-backend-608358746679.asia-south1.run.app\" -H \"Content-Type: application/json\" -d '{\"section\":\"112\"}' https://venueflow-backend-608358746679.asia-south1.run.app/api/gemini/itinerary)",
+      "Bash(curl -s -v -X OPTIONS -H \"Origin: https://venueflow-backend-608358746679.asia-south1.run.app\" -H \"Access-Control-Request-Method: GET\" -H \"Access-Control-Request-Headers: content-type\" https://venueflow-backend-608358746679.asia-south1.run.app/api/crowd)",
+      "Bash(VITE_API_BASE_URL=/api VITE_GOOGLE_MAPS_API_KEY=AIzaSyBSIYKRVfpyKaLAbVClyludFS3lgfzCEvA VITE_STAFF_API_KEY=venueflow-staff-2026-secure VITE_FIREBASE_API_KEY=AIzaSyBB1X60AIMDnRzJH3yYKeyK4GY7BYTuww8 VITE_FIREBASE_AUTH_DOMAIN=virtual-promptwars.firebaseapp.com VITE_FIREBASE_DATABASE_URL=https://virtual-promptwars-default-rtdb.asia-southeast1.firebasedatabase.app VITE_FIREBASE_PROJECT_ID=virtual-promptwars VITE_FIREBASE_STORAGE_BUCKET=virtual-promptwars.firebasestorage.app VITE_FIREBASE_MESSAGING_SENDER_ID=608358746679 VITE_FIREBASE_APP_ID=1:608358746679:web:861580db060ee414818db2 npm run build)",
+      "Bash(curl -s https://venueflow-backend-608358746679.asia-south1.run.app/assets/index-DgJLjmqF.js)",
+      "Bash(ls \"C:/Users/Utkarsh/Desktop/Project/Virtual PromptWars/Virtual-PromptWars/venueflow/backend/src/middleware/requestId\"*)"
     ]
   }
 }

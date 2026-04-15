@@ -87,7 +87,10 @@ async function chatWithGemini(userMessage: string): Promise<string> {
                 `You are VenueFlow Bot, an AI stadium assistant. You provide brief, helpful answers. ` +
                 `Context: Gates 1-4 are entry, Gates 5-8 are exit. Food is available throughout the ` +
                 `venue, vegan options at Stand 12. Question: ${userMessage}`;
-            const result = await model.generateContent(prompt);
+            const result = await model.generateContent({
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                tools: [{ googleSearch: {} }],
+            } as Parameters<typeof model.generateContent>[0]);
             return result.response.text();
         } catch (err: unknown) {
             logger.error('Gemini chat error', { error: (err instanceof Error ? err.message : String(err)) });

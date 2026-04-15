@@ -1,5 +1,5 @@
 import React from 'react';
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
 import { CrowdSection } from '../types';
 import { densityMarkerIcon, densityLabel } from '../utils/density';
 
@@ -16,6 +16,8 @@ const mapContainerStyle = {
 
 const STADIUM_CENTER = { lat: 40.7128, lng: -74.006 };
 
+const libraries: ('marker')[] = ['marker'];
+
 const SECTION_COORDINATES: Record<string, { lat: number; lng: number }> = {
   '101': { lat: 40.713, lng: -74.0062 },
   '102': { lat: 40.7128, lng: -74.0058 },
@@ -30,10 +32,16 @@ function getSectionPosition(section: string) {
   };
 }
 
+const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+if (!googleMapsApiKey) {
+  throw new Error('VITE_GOOGLE_MAPS_API_KEY is required in .env');
+}
+
 const StadiumMap: React.FC<StadiumMapProps> = ({ crowd }) => {
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'MISSING_API_KEY',
+    googleMapsApiKey,
+    libraries,
   });
 
   if (loadError) {
@@ -59,16 +67,29 @@ const StadiumMap: React.FC<StadiumMapProps> = ({ crowd }) => {
   }
 
   return (
-    <GoogleMap mapContainerStyle={mapContainerStyle} center={STADIUM_CENTER} zoom={17}>
-      {crowd.map((section) => (
-        <Marker
-          key={section.section}
-          position={getSectionPosition(section.section)}
-          icon={densityMarkerIcon(section.density)}
-          title={`Section ${section.section} — ${densityLabel(section.density)}`}
-        />
-      ))}
-    </GoogleMap>
+    <>
+      <p className="sr-only">
+        Interactive map. Crowd density data is also available in the fully accessible Crowd Heatmap section below.
+      </p>
+      <div role="region" aria-label="Stadium crowd density map" className="h-full w-full">
+        <GoogleMap
+          mapContainerStyle={mapContainerStyle}
+          center={STADIUM_CENTER}
+          zoom={17}
+          mapId="VENUEFLOW_DEMO_MAP"
+          options={{ mapId: 'VENUEFLOW_DEMO_MAP' }}
+        >
+          {crowd.map((section) => (
+            <MarkerF
+              key={section.section}
+              position={getSectionPosition(section.section)}
+              icon={densityMarkerIcon(section.density)}
+              title={`Section ${section.section} — ${densityLabel(section.density)}`}
+            />
+          ))}
+        </GoogleMap>
+      </div>
+    </>
   );
 };
 
