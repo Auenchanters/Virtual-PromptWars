@@ -77,6 +77,9 @@ async function cached(
  * Responses are cached by message hash so repeated FAQs (e.g. "where is gate 4?")
  * don't re-hit Gemini within the cache window.
  *
+ * Uses a structured GenerateContentRequest (contents + tools) rather than
+ * a plain string so callers can extend with function-calling in future.
+ *
  * @throws When the underlying Gemini call fails or the message is missing.
  */
 async function chatWithGemini(userMessage: string): Promise<string> {
@@ -89,7 +92,10 @@ async function chatWithGemini(userMessage: string): Promise<string> {
                 `Context: Gates 1-4 are entry, Gates 5-8 are exit. Food is available throughout the ` +
                 `venue, vegan options at Stand 12. Question: ${userMessage}`;
 
-            const result = await model.generateContent(prompt);
+            const result = await model.generateContent({
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                tools: [],
+            });
             return result.response.text();
         } catch (err: unknown) {
             logger.error('Gemini chat error', { error: (err instanceof Error ? err.message : String(err)) });

@@ -47,6 +47,10 @@ import type { CrowdSection, QueueItem } from '../src/types';
 describe('geminiService', () => {
     beforeEach(() => {
         mockGenerateContent.mockClear();
+        // Reset to happy-path default before each test
+        mockGenerateContent.mockResolvedValue({
+            response: { text: () => 'mock response' },
+        });
     });
 
     describe('happy paths', () => {
@@ -54,7 +58,7 @@ describe('geminiService', () => {
             const result = await chatWithGemini('Where is gate 4?');
             expect(result).toBe('mock response');
             expect(mockGenerateContent).toHaveBeenCalledTimes(1);
-            const [arg] = mockGenerateContent.mock.calls[0];
+            const [arg] = mockGenerateContent.mock.calls[0] as [unknown];
             expect(arg).toHaveProperty('tools');
         });
 
@@ -75,6 +79,13 @@ describe('geminiService', () => {
             const result = await generateItinerary('112', []);
             expect(result).toBe('mock response');
         });
+
+        it('generateItinerary includes crowd context when crowd data provided', async () => {
+            const crowd: CrowdSection[] = [{ id: '3', section: '112', density: 'HIGH' }];
+            const result = await generateItinerary('112-B', crowd);
+            expect(result).toBe('mock response');
+            expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+        });
     });
 
     describe('failure paths', () => {
@@ -84,6 +95,31 @@ describe('geminiService', () => {
 
         it('generateItinerary throws when section is empty', async () => {
             await expect(generateItinerary('')).rejects.toThrow('Section is required.');
+        });
+
+        it('chatWithGemini propagates Gemini API error', async () => {
+            mockGenerateContent.mockRejectedValueOnce(new Error('Gemini API down'));
+            await expect(chatWithGemini('unique-error-test-msg-chat')).rejects.toThrow('Gemini API down');
+        });
+
+        it('generateCrowdSummary returns fallback string on Gemini error', async () => {
+            mockGenerateContent.mockRejectedValueOnce(new Error('quota exceeded'));
+            const crowd: CrowdSection[] = [{ id: '99', section: 'ERR', density: 'LOW' }];
+            const result = await generateCrowdSummary(crowd);
+            expect(result).toBe('Crowd data is currently being updated.');
+        });
+
+        it('generateCrowdForecast returns fallback string on Gemini error', async () => {
+            mockGenerateContent.mockRejectedValueOnce(new Error('network timeout'));
+            const crowd: CrowdSection[] = [{ id: '98', section: 'ERR2', density: 'MEDIUM' }];
+            const queues: QueueItem[] = [{ id: 'q-err', type: 'concession', waitTimeMinutes: 99 }];
+            const result = await generateCrowdForecast(crowd, queues);
+            expect(result).toBe('Crowd forecast is temporarily unavailable. Please check back in a moment.');
+        });
+
+        it('generateItinerary propagates Gemini API error', async () => {
+            mockGenerateContent.mockRejectedValueOnce(new Error('model overloaded'));
+            await expect(generateItinerary('unique-error-section-999')).rejects.toThrow('model overloaded');
         });
     });
 });
