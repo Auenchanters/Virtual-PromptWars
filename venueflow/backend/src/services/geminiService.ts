@@ -4,7 +4,7 @@ import {
     HarmBlockThreshold,
     HarmCategory,
 } from '@google/generative-ai';
-import type { GenerativeModel, SafetySetting } from '@google/generative-ai';
+import type { GenerateContentRequest, GenerativeModel, SafetySetting } from '@google/generative-ai';
 import NodeCache from 'node-cache';
 import type { CrowdSection, QueueItem } from '../types';
 import { logger } from '../utils/logger';
@@ -87,10 +87,15 @@ async function chatWithGemini(userMessage: string): Promise<string> {
                 `You are VenueFlow Bot, an AI stadium assistant. You provide brief, helpful answers. ` +
                 `Context: Gates 1-4 are entry, Gates 5-8 are exit. Food is available throughout the ` +
                 `venue, vegan options at Stand 12. Question: ${userMessage}`;
-            const result = await model.generateContent({
+
+            // Build a properly typed GenerateContentRequest to avoid TS2352.
+            // The googleSearch tool object must be passed through the typed
+            // request shape rather than cast with `as`.
+            const request: GenerateContentRequest = {
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
                 tools: [{ googleSearch: {} }],
-            } as Parameters<typeof model.generateContent>[0]);
+            };
+            const result = await model.generateContent(request);
             return result.response.text();
         } catch (err: unknown) {
             logger.error('Gemini chat error', { error: (err instanceof Error ? err.message : String(err)) });

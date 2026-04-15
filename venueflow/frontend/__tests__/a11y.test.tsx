@@ -60,7 +60,10 @@ describe('Accessibility landmarks and semantics', () => {
         const dialog = screen.getByRole('dialog', { name: /Venue Assistant/i });
         expect(dialog).toHaveAttribute('aria-modal', 'true');
 
-        fireEvent.keyDown(dialog, { key: 'Escape' });
+        // The useFocusTrap hook attaches the keydown listener to `document`,
+        // not the dialog element itself — fire on document.body so the
+        // event bubbles up correctly and the Escape handler is triggered.
+        fireEvent.keyDown(document.body, { key: 'Escape' });
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
