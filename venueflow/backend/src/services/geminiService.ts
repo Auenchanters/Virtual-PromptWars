@@ -4,7 +4,7 @@ import {
     HarmBlockThreshold,
     HarmCategory,
 } from '@google/generative-ai';
-import type { GenerateContentRequest, GenerativeModel, SafetySetting } from '@google/generative-ai';
+import type { GenerativeModel, SafetySetting } from '@google/generative-ai';
 import NodeCache from 'node-cache';
 import type { CrowdSection, QueueItem } from '../types';
 import { logger } from '../utils/logger';
@@ -26,16 +26,17 @@ const safetySettings: SafetySetting[] = [
 ];
 
 const genAI = new GoogleGenerativeAI(apiKey);
-// Model instance is memoized once at module load — creating it per-request
-// wastes CPU and allocates a fresh HTTP client for every Gemini call.
+// Singleton — creating a new GenerativeModel per request wastes CPU and
+// allocates a fresh HTTP client on every Gemini call.
 const model: GenerativeModel = genAI.getGenerativeModel({
     model: MODEL_NAME,
     safetySettings,
 });
 
-// Response caches keyed by hash of prompt inputs. Forecast changes slowly, so
-// it gets a longer TTL; chat/itinerary responses still benefit from dedupe
-// across concurrent requests (single-flight below).
+// Response caches keyed by SHA-256 hash of prompt inputs.
+// Forecast data changes slowly so it gets a longer TTL.
+// Chat/itinerary caches also deduplicate concurrent identical requests
+// via the single-flight inflight map below.
 const responseCache = new NodeCache({ stdTTL: CACHE_TTL_SECONDS });
 const forecastCache = new NodeCache({ stdTTL: FORECAST_CACHE_TTL_SECONDS });
 
@@ -88,14 +89,7 @@ async function chatWithGemini(userMessage: string): Promise<string> {
                 `Context: Gates 1-4 are entry, Gates 5-8 are exit. Food is available throughout the ` +
                 `venue, vegan options at Stand 12. Question: ${userMessage}`;
 
-            // Build a properly typed GenerateContentRequest to avoid TS2352.
-            // The googleSearch tool object must be passed through the typed
-            // request shape rather than cast with `as`.
-            const request: GenerateContentRequest = {
-                contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                tools: [{ googleSearch: {} }],
-            };
-            const result = await model.generateContent(request);
+            const result = await model.generateContent(prompt);
             return result.response.text();
         } catch (err: unknown) {
             logger.error('Gemini chat error', { error: (err instanceof Error ? err.message : String(err)) });
