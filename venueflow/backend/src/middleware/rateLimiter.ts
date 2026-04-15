@@ -29,8 +29,4 @@ const writeLimiter = rateLimit({
     max: WRITE_RATE_LIMIT_MAX,
 });
 
-export {
-    readLimiter as rateLimiter,
-    readLimiter,
-    writeLimiter,
-};
+export { readLimiter, writeLimiter };

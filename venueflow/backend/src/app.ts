@@ -7,11 +7,12 @@ import 'dotenv/config';
 import './config/env';
 
 import { logger } from './utils/logger';
-import { REQUEST_BODY_LIMIT } from './config/constants';
+import { REQUEST_BODY_LIMIT, REQUEST_TIMEOUT_MS } from './config/constants';
 import { readLimiter, writeLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
 import { requestId } from './middleware/requestId';
 import { requireJson } from './middleware/requireJson';
+import { requestTimeout } from './middleware/timeout';
 
 import crowdRoutes from './routes/crowd';
 import queueRoutes from './routes/queue';
@@ -27,6 +28,7 @@ const app = express();
 app.set('trust proxy', 1);
 app.disable('x-powered-by');
 app.use(requestId);
+app.use(requestTimeout(REQUEST_TIMEOUT_MS));
 app.use(compression());
 
 /* ── Helmet security headers for API routes only ── */

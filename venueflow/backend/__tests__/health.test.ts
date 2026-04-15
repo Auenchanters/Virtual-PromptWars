@@ -32,7 +32,9 @@ describe('GET /health', () => {
 
     it('includes an X-Request-Id header', async () => {
         const response = await request(app).get('/health');
-        expect(response.headers['x-request-id']).toBeDefined();
-        expect(response.headers['x-request-id'].length).toBeGreaterThan(0);
+        const headerValue = response.headers['x-request-id'];
+        expect(headerValue).toBeDefined();
+        expect(typeof headerValue).toBe('string');
+        expect((headerValue as string).length).toBeGreaterThan(0);
     });
 });

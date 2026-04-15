@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (lint · typecheck · test · audit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: venueflow/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: venueflow/backend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: Tests with coverage
+        env:
+          GEMINI_API_KEY: ci-test-key
+          STAFF_API_KEY: ci-test-staff-key
+          FIREBASE_PROJECT_ID: ci-test-project
+          FIREBASE_DATABASE_URL: https://ci-test.firebaseio.com
+        run: npm run test:coverage
+      - name: Dependency audit (high+)
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: false
+
+  frontend:
+    name: Frontend (lint · typecheck · test · a11y · build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: venueflow/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: venueflow/frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm run typecheck --if-present
+      - name: Tests with coverage (includes jest-axe a11y audits)
+        run: npm test -- --coverage --watchAll=false
+      - run: npm run build
+
+  dependency-review:
+    name: Dependency review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high

@@ -1,12 +1,22 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import HomePage from './pages/HomePage';
-import DashboardPage from './pages/DashboardPage';
-import StaffPage from './pages/StaffPage';
 import GeminiChatbot from './components/GeminiChatbot';
+import { useRouteFocus } from './hooks/useRouteFocus';
+
+const HomePage = lazy(() => import('./pages/HomePage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const StaffPage = lazy(() => import('./pages/StaffPage'));
+
+const RouteFallback: React.FC = () => (
+  <div role="status" aria-live="polite" className="text-gray-500 italic">
+    Loading…
+  </div>
+);
 
 function App() {
+  useRouteFocus('main-content');
+
   return (
     <div className="min-h-screen flex flex-col">
       <a
@@ -16,12 +26,18 @@ function App() {
         Skip to main content
       </a>
       <Navbar />
-      <main id="main-content" className="flex-grow container mx-auto px-4 py-8">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/staff" element={<StaffPage />} />
-        </Routes>
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-grow container mx-auto px-4 py-8 focus:outline-none"
+      >
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/staff" element={<StaffPage />} />
+          </Routes>
+        </Suspense>
       </main>
       <GeminiChatbot />
     </div>

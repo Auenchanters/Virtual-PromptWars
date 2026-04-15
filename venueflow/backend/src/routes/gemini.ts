@@ -36,7 +36,7 @@ router.post('/chat', async (req: Request, res: Response, next: NextFunction) => 
         const parsed = chatSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({
-                error: parsed.error.issues[0].message,
+                error: parsed.error.issues[0]?.message ?? 'Invalid request.',
                 status: 400,
                 requestId: req.id,
             });
@@ -57,7 +57,7 @@ router.post('/itinerary', async (req: Request, res: Response, next: NextFunction
         const parsed = itinerarySchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({
-                error: parsed.error.issues[0].message,
+                error: parsed.error.issues[0]?.message ?? 'Invalid request.',
                 status: 400,
                 requestId: req.id,
             });

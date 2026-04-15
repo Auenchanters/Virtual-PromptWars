@@ -23,12 +23,19 @@ export function useFocusTrap(
       }
       if (event.key !== 'Tab') return;
 
-      const focusable = container.querySelectorAll<HTMLElement>(
-        'button, [href], input, textarea, [tabindex]:not([tabindex="-1"])'
+      const candidates = container.querySelectorAll<HTMLElement>(
+        'a[href], area[href], button, input, textarea, select, [contenteditable="true"], [tabindex]:not([tabindex="-1"])'
       );
+      const focusable: HTMLElement[] = [];
+      candidates.forEach((el) => {
+        if (el.hasAttribute('disabled')) return;
+        if (el.getAttribute('aria-hidden') === 'true') return;
+        if (el.tabIndex < 0) return;
+        focusable.push(el);
+      });
       if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
       const current = document.activeElement as HTMLElement | null;
 
       if (event.shiftKey && current === first) {

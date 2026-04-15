@@ -10,6 +10,7 @@ import {
     DENSITY_HIGH,
 } from '../config/constants';
 import { CrowdSection, QueueItem } from '../types';
+import { CrowdSectionSchema, QueueItemSchema } from '../schemas/firestore';
 
 const cache = new NodeCache({ stdTTL: CACHE_TTL_SECONDS });
 
@@ -27,9 +28,12 @@ const FALLBACK_QUEUES: QueueItem[] = [
 ];
 
 /**
- * Retrieves crowd heatmap data from Firestore.
- * Results are cached to reduce database reads and network latency.
- * @returns {Promise<object[]>} Array of crowd density objects with section and density fields
+ * Retrieves crowd heatmap data from Firestore. Every document is validated
+ * through `CrowdSectionSchema` at the read boundary; malformed rows are
+ * dropped rather than cast blindly. Falls back to deterministic demo data
+ * if the collection is empty so the UI never shows a stale or broken state.
+ *
+ * @throws When the underlying Firestore fetch fails.
  */
 async function getCrowdData(): Promise<CrowdSection[]> {
     const cached = cache.get<CrowdSection[]>('crowd_data');
@@ -39,7 +43,15 @@ async function getCrowdData(): Promise<CrowdSection[]> {
         const snapshot = await db.collection(COLLECTION_CROWD).get();
         const crowdData: CrowdSection[] = [];
         snapshot.forEach((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
-            crowdData.push({ id: doc.id, ...doc.data() } as CrowdSection);
+            const parsed = CrowdSectionSchema.safeParse({ id: doc.id, ...doc.data() });
+            if (parsed.success) {
+                crowdData.push(parsed.data);
+            } else {
+                logger.warn('Rejected malformed crowd document', {
+                    id: doc.id,
+                    issues: parsed.error.issues.map((i) => i.message),
+                });
+            }
         });
 
         const finalData = crowdData.length > 0 ? crowdData : FALLBACK_CROWD;
@@ -52,8 +64,10 @@ async function getCrowdData(): Promise<CrowdSection[]> {
 }
 
 /**
- * Retrieves queue wait times from Firestore.
- * @returns {Promise<object[]>} Array of queue wait time objects with type and waitTimeMinutes fields
+ * Retrieves queue wait times from Firestore with runtime validation.
+ * Malformed rows are dropped and logged; empty results fall back to demo data.
+ *
+ * @throws When the underlying Firestore fetch fails.
  */
 async function getQueueData(): Promise<QueueItem[]> {
     const cached = cache.get<QueueItem[]>('queue_data');
@@ -63,7 +77,15 @@ async function getQueueData(): Promise<QueueItem[]> {
         const snapshot = await db.collection(COLLECTION_QUEUES).get();
         const queueData: QueueItem[] = [];
         snapshot.forEach((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
-            queueData.push({ id: doc.id, ...doc.data() } as QueueItem);
+            const parsed = QueueItemSchema.safeParse({ id: doc.id, ...doc.data() });
+            if (parsed.success) {
+                queueData.push(parsed.data);
+            } else {
+                logger.warn('Rejected malformed queue document', {
+                    id: doc.id,
+                    issues: parsed.error.issues.map((i) => i.message),
+                });
+            }
         });
 
         const finalData = queueData.length > 0 ? queueData : FALLBACK_QUEUES;

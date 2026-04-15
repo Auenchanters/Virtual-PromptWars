@@ -52,11 +52,10 @@ async function seed() {
     console.info(`Seeded ${CROWD_SEED.length} crowd sections`);
 
     const queueBatch = db.batch();
-    for (let i = 0; i < QUEUE_SEED.length; i++) {
-        const data = QUEUE_SEED[i];
+    QUEUE_SEED.forEach((data, i) => {
         const ref = db.collection('queues').doc(`${data.type}-${i + 1}`);
         queueBatch.set(ref, data);
-    }
+    });
     await queueBatch.commit();
     console.info(`Seeded ${QUEUE_SEED.length} queue entries`);
 

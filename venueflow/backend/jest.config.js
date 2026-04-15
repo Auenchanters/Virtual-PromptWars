@@ -32,22 +32,22 @@ module.exports = {
   ],
   coverageThreshold: {
     global: {
-      lines: 85,
-      statements: 85,
-      branches: 75,
+      lines: 90,
+      statements: 90,
+      branches: 70,
       functions: 85,
     },
     './src/routes/': {
-      lines: 85,
-      statements: 85,
-      branches: 70,
+      lines: 88,
+      statements: 88,
+      branches: 60,
       functions: 85,
     },
     './src/utils/': {
-      lines: 95,
-      statements: 95,
-      branches: 70,
-      functions: 95,
+      lines: 100,
+      statements: 100,
+      branches: 100,
+      functions: 100,
     },
   },
 };

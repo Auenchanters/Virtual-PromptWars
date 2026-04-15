@@ -5,6 +5,14 @@ process.env.FIREBASE_DATABASE_URL = 'https://test.firebaseio.com';
 
 import request from 'supertest';
 
+const verifyIdToken = jest.fn();
+
+jest.mock('../src/config/firebaseAdmin', () => ({
+    admin: { auth: () => ({ verifyIdToken }) },
+    db: { collection: jest.fn() },
+    rtdb: { ref: jest.fn() },
+}));
+
 jest.mock('../src/services/realtimeService', () => ({
     broadcastMessage: jest.fn().mockResolvedValue(undefined),
 }));
@@ -83,5 +91,34 @@ describe('Staff Broadcast API', () => {
             .send({ announcement: 'x'.repeat(1001) });
         expect(response.status).toBe(400);
         expect(response.body.error).toMatch(/1000/);
+    });
+
+    it('accepts a Firebase ID token with a staff custom claim', async () => {
+        verifyIdToken.mockResolvedValueOnce({ uid: 'user-123', staff: true });
+        const response = await request(app)
+            .post('/api/staff/broadcast')
+            .set('Authorization', 'Bearer valid-id-token')
+            .send(VALID_BODY);
+        expect(response.status).toBe(201);
+        expect(verifyIdToken).toHaveBeenCalledWith('valid-id-token');
+    });
+
+    it('rejects a valid token that lacks the staff claim with 403', async () => {
+        verifyIdToken.mockResolvedValueOnce({ uid: 'user-123' });
+        const response = await request(app)
+            .post('/api/staff/broadcast')
+            .set('Authorization', 'Bearer valid-but-not-staff')
+            .send(VALID_BODY);
+        expect(response.status).toBe(403);
+    });
+
+    it('falls back to the shared key when the ID token is invalid', async () => {
+        verifyIdToken.mockRejectedValueOnce(new Error('expired token'));
+        const response = await request(app)
+            .post('/api/staff/broadcast')
+            .set('Authorization', 'Bearer expired-token')
+            .set(STAFF_KEY)
+            .send(VALID_BODY);
+        expect(response.status).toBe(201);
     });
 });
