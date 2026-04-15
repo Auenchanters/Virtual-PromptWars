@@ -10,7 +10,7 @@ const forecastCache = new NodeCache({ stdTTL: FORECAST_CACHE_TTL_SECONDS });
 /**
  * GET /api/crowd — live crowd density per section.
  */
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
     try {
         const data = await getCrowdData();
         res.setHeader('Cache-Control', 'public, max-age=30');
@@ -25,12 +25,13 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
  * alternative section recommendations. Cached for 60 seconds to keep
  * AI cost predictable.
  */
-router.get('/forecast', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/forecast', async (_req: Request, res: Response, next: NextFunction) => {
     try {
         const cached = forecastCache.get('forecast');
         if (cached) {
             res.setHeader('Cache-Control', 'public, max-age=60');
-            return res.status(200).json({ forecast: cached });
+            res.status(200).json({ forecast: cached });
+            return;
         }
 
         const [crowd, queues] = await Promise.all([

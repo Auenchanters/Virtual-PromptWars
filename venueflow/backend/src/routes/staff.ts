@@ -27,11 +27,12 @@ router.post(
         try {
             const parsed = broadcastSchema.safeParse(req.body);
             if (!parsed.success) {
-                return res.status(400).json({
+                res.status(400).json({
                     error: parsed.error.issues[0]?.message ?? 'Invalid request.',
                     status: 400,
                     requestId: req.id,
                 });
+                return;
             }
 
             await broadcastMessage(parsed.data.announcement);
