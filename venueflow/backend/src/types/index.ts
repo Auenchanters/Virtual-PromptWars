@@ -3,7 +3,7 @@ export type CrowdDensity = 'LOW' | 'MEDIUM' | 'HIGH';
 export interface CrowdSection {
     id: string;
     section: string;
-    density: string;
+    density: CrowdDensity;
 }
 
 export interface QueueItem {

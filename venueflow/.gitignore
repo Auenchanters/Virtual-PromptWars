@@ -13,3 +13,6 @@ coverage/
 # Built frontend assets contain baked-in API keys — never commit to git.
 # These are copied to backend/public/ before deploy and included via .gcloudignore.
 backend/public/
+
+# Firebase hosting cache
+.firebase/

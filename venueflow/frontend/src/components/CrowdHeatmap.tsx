@@ -14,7 +14,7 @@ const CrowdHeatmap: React.FC<CrowdHeatmapProps> = ({ data }) => {
       return (
         <div
           key={section.section}
-          role="gridcell"
+          role="listitem"
           className={`${bgColor} flex flex-col justify-center items-center p-4 rounded text-white font-bold h-32`}
           aria-label={`Section ${section.section}, ${label}`}
         >
@@ -33,7 +33,7 @@ const CrowdHeatmap: React.FC<CrowdHeatmapProps> = ({ data }) => {
         Stadium Crowd Heatmap
       </h2>
       <div
-        role="grid"
+        role="list"
         aria-label="Stadium crowd density map"
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
       >

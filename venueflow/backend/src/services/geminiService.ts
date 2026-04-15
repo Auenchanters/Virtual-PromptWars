@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { GenerativeModel } from '@google/generative-ai';
+import type { CrowdSection, QueueItem } from '../types';
 import { logger } from '../utils/logger';
 
 const apiKey = process.env.GEMINI_API_KEY;
@@ -35,10 +36,10 @@ async function chatWithGemini(userMessage: string): Promise<string> {
 
 /**
  * Friendly summary of current crowd density for attendees.
- * @param {unknown[]} crowdData - Array of crowd density data objects for stadium sections
+ * @param {CrowdSection[]} crowdData - Array of crowd density data objects for stadium sections
  * @returns {Promise<string>} A friendly one-sentence summary of current crowd conditions
  */
-async function generateCrowdSummary(crowdData: unknown[]): Promise<string> {
+async function generateCrowdSummary(crowdData: CrowdSection[]): Promise<string> {
     try {
         const model = getModel();
         const prompt =
@@ -56,11 +57,11 @@ async function generateCrowdSummary(crowdData: unknown[]): Promise<string> {
  * Predictive 15-minute crowd forecast. Takes current crowd + queue snapshots
  * and asks Gemini to recommend low-density alternative sections so attendees
  * can self-redistribute before bottlenecks form.
- * @param {unknown[]} crowdData - Array of current crowd density data objects
- * @param {unknown[]} queueData - Array of current queue wait time data objects
+ * @param {CrowdSection[]} crowdData - Array of current crowd density data objects
+ * @param {QueueItem[]} queueData - Array of current queue wait time data objects
  * @returns {Promise<string>} A short 15-minute crowd forecast with recommendations
  */
-async function generateCrowdForecast(crowdData: unknown[], queueData: unknown[]): Promise<string> {
+async function generateCrowdForecast(crowdData: CrowdSection[], queueData: QueueItem[]): Promise<string> {
     try {
         const model = getModel();
         const prompt =
@@ -82,15 +83,15 @@ async function generateCrowdForecast(crowdData: unknown[], queueData: unknown[])
  * asks Gemini to suggest lower-density alternatives so attendees avoid
  * bottlenecks proactively.
  * @param {string} section - The stadium section the attendee is sitting in
- * @param {unknown[]} crowdData - Optional array of live crowd density data objects
+ * @param {CrowdSection[]} crowdData - Optional array of live crowd density data objects
  * @returns {Promise<string>} A personalized itinerary with arrival time, gate, and concessions
  */
-async function generateItinerary(section: string, crowdData: unknown[] = []): Promise<string> {
+async function generateItinerary(section: string, crowdData: CrowdSection[] = []): Promise<string> {
     if (!section) throw new Error('Section is required.');
 
     try {
         const model = getModel();
-        const crowdContext = Array.isArray(crowdData) && crowdData.length > 0
+        const crowdContext = crowdData.length > 0
             ? `Current live crowd densities: ${JSON.stringify(crowdData)}. ` +
               `If the attendee's section is HIGH density, explicitly suggest a less-crowded ` +
               `alternative route or nearby section and recommend a quieter concession stand.`

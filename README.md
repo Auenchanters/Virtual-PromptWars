@@ -6,102 +6,140 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![WCAG 2.1 AA](https://img.shields.io/badge/WCAG-2.1%20AA-green)](https://www.w3.org/WAI/WCAG21/quickref/)
 
-VenueFlow is an AI-powered smart stadium experience platform that solves the three core challenges of large-scale sporting events: **crowd movement**, **waiting times**, and **real-time coordination**.
+VenueFlow is an AI-powered smart stadium experience platform that solves the three core challenges of large-scale sporting events: **crowd movement**, **waiting times**, and **real-time coordination**. It combines a real-time crowd heatmap, smart queue estimation, a Gemini-powered venue chatbot, live staff broadcasts, and personalised itineraries into a single, accessible web app.
 
-## Live Demo
+## Chosen Vertical
 
-- **Frontend**: _Deploy to Firebase Hosting (see Deployment section below)_
-- **Backend API**: https://venueflow-backend-608358746679.asia-south1.run.app
-- **Health Check**: https://venueflow-backend-608358746679.asia-south1.run.app/health
+**Physical Event Experience** — the challenge of making large sporting venues safer, faster, and more enjoyable for attendees through live data and AI-assisted guidance.
 
 ## Problem → Solution Mapping
 
 | Challenge | VenueFlow Feature | How It Helps |
 |-----------|------------------|--------------|
-| **Crowd Movement** | Live Crowd Heatmap | Real-time color-coded density map (LOW/MEDIUM/HIGH) so attendees avoid congested zones |
-| **Waiting Times** | Smart Queue Estimator | Live wait times for gates, concessions, restrooms — updated via Firebase Realtime DB |
-| **Real-Time Coordination** | Staff Broadcast Feed + Gemini AI | Staff push live alerts; AI chatbot answers any venue question instantly |
-| **Personalization** | AI Itinerary Generator | Gemini creates a custom event schedule based on your seat section |
+| **Crowd Movement** | Live Crowd Heatmap + Google Maps overlay | Real-time colour-coded density (LOW/MEDIUM/HIGH) so attendees avoid congested zones before they form |
+| **Waiting Times** | Smart Queue Estimator | Live wait times for gates, concessions, and restrooms — reads Firestore through a 30s-cached endpoint |
+| **Real-Time Coordination** | Staff Broadcast Feed | Staff push alerts through Firebase Realtime Database, streamed to every connected attendee |
+| **Attendee Guidance** | Gemini AI Chatbot | Natural-language Q&A about gates, food, vegan options, and facilities (grounded prompt) |
+| **Personalisation** | AI Itinerary & 15-min Forecast | Gemini produces a crowd-aware plan per seat section and a short predictive outlook for the next 15 minutes |
+
+## Approach and Logic
+
+Large-venue pain points are almost always caused by **information asymmetry**: attendees don't know where the crowd is, how long queues are, or what operations is about to announce. VenueFlow collapses that asymmetry by pairing three data sources:
+
+1. **Firestore** acts as the source of truth for crowd densities and queue wait times. A lightweight server cache (30s TTL) keeps reads cheap and responsive without starving the live signal.
+2. **Firebase Realtime Database** carries operational push messages from staff (gate openings, delays, medical alerts) so coordination is instant rather than polled.
+3. **Gemini 2.5 Flash** turns raw data into human guidance — summarising density, predicting the next 15 minutes, answering venue questions, and generating itineraries that actively route attendees away from HIGH-density sections.
+
+The front-end renders the same state through three complementary views (heatmap grid, Google Maps overlay, queue list) so attendees can self-serve regardless of how they think spatially. Every surface is screen-reader friendly and keyboard navigable.
+
+## How the Solution Works
+
+1. An attendee opens the web app and lands on the **Home** page, which explains the features and offers a single entry point into the Dashboard.
+2. On the **Dashboard** the attendee sees three live signals side-by-side:
+   - The **Stadium Crowd Heatmap** (coloured grid of sections)
+   - The **Google Maps** stadium overlay with density-coloured markers
+   - The **Live Wait Times** list for gates, concessions, and restrooms
+3. A **15-Minute Crowd Outlook** (Gemini) refreshes every 60 seconds and proactively suggests less-crowded alternatives.
+4. The floating **Venue Assistant** chatbot answers arbitrary questions grounded in stadium context (entry gates, vegan stands, etc.).
+5. The **Itinerary Planner** asks for the user's seat section and returns a Gemini-generated schedule — if the section is HIGH density, Gemini is explicitly prompted to suggest a quieter route.
+6. Operations staff open the **Staff** page, authenticate with the shared `X-Staff-Key` header, and push broadcasts via Realtime DB. Every attendee browser receives them instantly.
 
 ## Architecture
 
-```
-Attendee (React + TypeScript Frontend)
-         |
+```text
+Attendee (React + TypeScript Frontend on Firebase Hosting)
+         │
          ▼
-Cloud Run Backend (Node.js + Express)
-    |         |          |
-    ▼         ▼          ▼
-Gemini    Firestore  Realtime DB
-API 2.0   (crowd,    (staff
-(AI)       queues)    broadcasts)
-    |
+Cloud Run Backend (Node.js 18 + Express + TypeScript)
+    │            │              │
+    ▼            ▼              ▼
+ Gemini      Firestore      Realtime DB
+ 2.5 Flash   (crowd,        (staff
+ (AI)         queues)        broadcasts)
+    │
     ▼
 Google Maps JavaScript API
-(heatmap overlay)
+(density marker overlay)
 ```
 
 ## Google Services Used
 
 | Service | Purpose | Usage |
 |---------|---------|-------|
-| **Gemini API (gemini-2.0-flash)** | AI chatbot, crowd summaries, itinerary generation | 3 distinct use cases |
-| **Google Maps JavaScript API** | Stadium map with crowd density overlays | Frontend heatmap |
-| **Firebase Firestore** | Crowd density + queue wait time data | Real-time reads with 30s cache |
-| **Firebase Realtime Database** | Staff broadcast messages | Live push to attendees |
-| **Google Cloud Run** | Containerized backend deployment | Auto-scaling, zero-downtime |
+| **Gemini API (`gemini-2.5-flash`)** | Chatbot, crowd summary, 15-min forecast, itinerary | 4 distinct prompt paths in `geminiService.ts` |
+| **Google Maps JavaScript API** | Stadium map with density-coloured markers | `StadiumMap.tsx` via `@react-google-maps/api` |
+| **Firebase Firestore** | Crowd density + queue wait-time data | Cached reads (30s TTL) through `firestoreService.ts` |
+| **Firebase Realtime Database** | Staff broadcast messages | Live push to attendees via `realtimeService.ts` |
+| **Google Cloud Run** | Containerised backend deployment | Auto-scaling (0–10 instances), deployed via Cloud Build |
 
 ## Tech Stack
 
-**Backend:** Node.js 18, Express.js, Firebase Admin SDK, `@google/generative-ai`
+- **Backend:** Node.js 18, Express.js, TypeScript (strict mode), Zod, Helmet, `xss`, `express-rate-limit`, `node-cache`, `compression`
+- **Frontend:** React 18, TypeScript (strict), React Router v6, Tailwind CSS, Vite, `@react-google-maps/api`, Firebase SDK
+- **Testing:** Jest, ts-jest, Supertest (backend E2E), @testing-library/react, jest-axe (frontend a11y)
+- **DevOps:** Docker (multi-stage), Google Cloud Run, Cloud Build, Artifact Registry, Firebase Hosting
 
-**Frontend:** React 18, TypeScript, Tailwind CSS, Vite
+## Live Demo
 
-**DevOps:** Docker, Google Cloud Run, Cloud Build, Artifact Registry
+- **Backend API:** https://venueflow-backend-608358746679.asia-south1.run.app
+- **Health Check:** https://venueflow-backend-608358746679.asia-south1.run.app/health
+- **Frontend:** Deploy to Firebase Hosting using the instructions in the **Deployment** section below, or run locally with `npm run dev`.
 
 ## Project Structure
 
-```
+```text
 Virtual-PromptWars/
 └── venueflow/
     ├── backend/
     │   ├── src/
-    │   │   ├── app.ts              # Express app (no listen — testable)
-    │   │   ├── server.ts           # Server entry point (app.listen)
+    │   │   ├── app.ts                    # Express app (no listen — testable)
+    │   │   ├── server.ts                 # Server entry point (app.listen)
     │   │   ├── config/
-    │   │   │   ├── env.ts          # Zod-validated environment variables
-    │   │   │   └── firebaseAdmin.js # Firebase Admin SDK init
+    │   │   │   ├── env.ts                # Zod-validated environment variables
+    │   │   │   ├── constants.ts          # Centralised constants and limits
+    │   │   │   └── firebaseAdmin.ts      # Firebase Admin SDK init (service account or ADC)
     │   │   ├── middleware/
-    │   │   │   ├── errorHandler.ts  # Global error handler
-    │   │   │   ├── rateLimiter.ts   # 100 req/15min per IP
-    │   │   │   ├── requestId.ts     # X-Request-Id tracing
-    │   │   │   ├── requireJson.ts   # Content-Type enforcement
-    │   │   │   └── requireStaffKey.ts # Staff auth (timing-safe)
+    │   │   │   ├── errorHandler.ts       # Global error handler
+    │   │   │   ├── rateLimiter.ts        # 100 read / 20 write req per 15 min per IP
+    │   │   │   ├── requestId.ts          # X-Request-Id tracing
+    │   │   │   ├── requireJson.ts        # Content-Type enforcement
+    │   │   │   └── requireStaffKey.ts    # Staff auth (crypto.timingSafeEqual)
     │   │   ├── routes/
-    │   │   │   ├── crowd.ts         # GET /api/crowd
-    │   │   │   ├── queue.ts         # GET /api/queue
-    │   │   │   ├── gemini.ts        # POST /api/gemini/chat|itinerary
-    │   │   │   └── staff.ts         # POST /api/staff/broadcast
+    │   │   │   ├── crowd.ts              # GET /api/crowd
+    │   │   │   ├── queue.ts              # GET /api/queue
+    │   │   │   ├── gemini.ts             # POST /api/gemini/chat | /itinerary | /forecast
+    │   │   │   └── staff.ts              # POST /api/staff/broadcast
     │   │   ├── services/
     │   │   │   ├── firestoreService.ts   # Crowd + queue data (cached)
-    │   │   │   ├── geminiService.ts      # Gemini AI integration
+    │   │   │   ├── geminiService.ts      # Gemini AI integration (4 prompts)
     │   │   │   └── realtimeService.ts    # Firebase RTDB broadcasts
-    │   │   ├── types/
-    │   │   │   └── index.ts         # Shared TypeScript interfaces
+    │   │   ├── types/index.ts            # Shared TypeScript interfaces
     │   │   ├── utils/
-    │   │   │   ├── sanitize.ts      # XSS sanitization (xss library)
-    │   │   │   └── logger.js        # Structured JSON logging
-    │   │   └── scripts/
-    │   │       └── seedFirestore.ts  # Populate demo data
-    │   ├── __tests__/               # Jest test suites (TypeScript)
+    │   │   │   ├── sanitize.ts           # XSS sanitisation (xss library)
+    │   │   │   └── logger.ts             # Structured JSON logging for Cloud Logging
+    │   │   └── scripts/seedFirestore.ts  # Populate demo data
+    │   ├── __tests__/                    # Jest + Supertest suites
     │   └── Dockerfile
     └── frontend/
-        └── src/
-            ├── components/          # React UI components
-            ├── pages/               # Page-level components
-            ├── hooks/               # Custom React hooks
-            ├── types/               # Shared TypeScript interfaces
-            └── services/            # API service layer
+        ├── src/
+        │   ├── App.tsx                   # Routing + skip-to-content link
+        │   ├── main.tsx                  # React entry point
+        │   ├── components/
+        │   │   ├── Navbar.tsx            # Semantic <nav> landmark
+        │   │   ├── CrowdHeatmap.tsx      # Accessible list of density cells
+        │   │   ├── StadiumMap.tsx        # Google Maps density overlay
+        │   │   ├── QueueStatus.tsx       # Live wait times
+        │   │   ├── GeminiChatbot.tsx     # Modal chatbot (focus trap)
+        │   │   ├── ItineraryPlanner.tsx  # Personalised plan generator
+        │   │   ├── CrowdForecast.tsx     # 15-min outlook (aria-live)
+        │   │   ├── StaffFeed.tsx         # Real-time broadcast stream
+        │   │   └── AccessibleAlert.tsx   # role="alert" wrapper
+        │   ├── pages/                    # HomePage, DashboardPage, StaffPage
+        │   ├── hooks/                    # useGemini, useCrowdData, useFocusTrap
+        │   ├── services/                 # api.ts, firebase.ts
+        │   ├── utils/                    # density helpers, sanitize, constants
+        │   └── types/index.ts            # Shared interfaces
+        └── __tests__/                    # Jest + @testing-library/react + jest-axe
 ```
 
 ## Local Setup
@@ -117,7 +155,7 @@ Virtual-PromptWars/
 ```bash
 cd venueflow/backend
 npm install
-cp .env.example .env   # Fill in your values
+cp .env.example .env   # fill in your values
 npm run dev
 ```
 
@@ -131,7 +169,7 @@ npm run dev
 
 ## Environment Variables
 
-### Backend
+### Backend (`venueflow/backend/.env`)
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
@@ -143,7 +181,7 @@ FRONTEND_URL=https://your-frontend-domain.com
 STAFF_API_KEY=your_shared_staff_secret
 ```
 
-### Frontend
+### Frontend (`venueflow/frontend/.env`)
 
 ```env
 VITE_API_BASE_URL=https://your-backend-url.run.app/api
@@ -158,7 +196,7 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 ```
 
-> **Note:** `VITE_GOOGLE_MAPS_API_KEY` must be set for the Stadium Map heatmap overlay to render. Restrict the key to your frontend domain in production via the Google Cloud Console.
+> **Note:** `VITE_GOOGLE_MAPS_API_KEY` must be restricted to your frontend domain in the Google Cloud Console in production.
 
 ## Deployment
 
@@ -172,6 +210,8 @@ gcloud run deploy venueflow-backend \
   --allow-unauthenticated
 ```
 
+Or use the provided `cloudbuild.yaml` for a full CI/CD pipeline (tests → Docker build → Artifact Registry → Cloud Run deploy → frontend build → Firebase Hosting deploy).
+
 ### Frontend (Firebase Hosting)
 
 ```bash
@@ -183,51 +223,69 @@ firebase deploy --only hosting
 
 ## Testing
 
+### Backend tests
+
 ```bash
 cd venueflow/backend
-npm test                 # Run all TypeScript test suites
-npm run test:coverage    # Run with coverage report (85% global, 95% routes/utils)
+npm test                 # all Jest suites
+npm run test:coverage    # enforces 85% global / 95% routes & utils thresholds
 ```
+
+Covers HTTP boundary (Supertest), security headers, rate limiting, Zod validation, XSS sanitisation, Firestore caching, and Realtime DB writes.
+
+### Frontend tests
+
+```bash
+cd venueflow/frontend
+npm test                 # Jest + @testing-library/react + jest-axe
+```
+
+Covers component rendering, hooks, API client behaviour, and **programmatic WCAG audits** via `jest-axe` on Navbar, CrowdHeatmap, QueueStatus, StadiumMap, CrowdForecast, ItineraryPlanner, and AccessibleAlert.
 
 ### Seed Demo Data
 
 ```bash
 cd venueflow/backend
-npm run seed             # Populate Firestore with 12 crowd sections + 10 queue entries
+npm run seed             # 12 crowd sections + 10 queue entries into Firestore
 ```
 
 ## Security
 
-- All API keys stored in environment variables — never hardcoded
-- Helmet.js with full CSP, HSTS, and referrer policy configuration
-- Express rate limiting: 100 requests per 15 minutes per IP
-- Request body size limit: 10kb
-- Input validation via Zod schemas with XSS sanitization (`xss` library) on all POST routes
-- Environment variables validated at startup via Zod (`src/config/env.ts`) — fails fast on misconfiguration
-- CORS restricted to explicit frontend origin
-- `crypto.timingSafeEqual` for staff key comparison (prevents timing attacks)
+Defense-in-depth is applied at every layer:
+
+- **Secrets:** never hardcoded — validated at startup by Zod in `src/config/env.ts`, which fails fast on misconfiguration
+- **HTTP headers:** Helmet with strict CSP, HSTS (1 year, preload), referrer policy, frame-ancestors `none`
+- **Rate limiting:** split limiters — 100 read requests / 15 min and 20 write requests / 15 min per IP
+- **Request body size:** 10 KB hard cap
+- **Input validation:** Zod schemas on every POST; `xss` library sanitises all user-supplied strings before they reach Gemini or Realtime DB
+- **CORS:** explicit origin allow-list (no wildcards), restricted methods (`GET`, `POST`, `OPTIONS`)
+- **Staff authentication:** `crypto.timingSafeEqual` comparison on the `X-Staff-Key` header — constant-time, immune to timing attacks
+- **Content-Type enforcement:** non-JSON POST/PUT/PATCH requests rejected with `415`
+- **Request tracing:** every response carries a unique `X-Request-Id` for log correlation
 
 ### Prototype Limitations
 
-- **Staff authentication** uses a shared `X-Staff-Key` secret compared with `crypto.timingSafeEqual`. In a production deployment, this would be replaced with Firebase Auth ID-token verification. See `.env.example` for configuration.
+- **Staff authentication** uses a shared `X-Staff-Key` secret. In production this would be replaced with Firebase Auth ID-token verification and per-staff roles. The backend comparison is the real security boundary — the frontend `VITE_STAFF_API_KEY` is inherently visible in the shipped JS bundle (standard Vite behaviour for `VITE_*` vars) and is only included to make the demo Staff page usable.
+- **Firestore reads** are cast to typed shapes without runtime validation; a production deployment would add Zod validation at the service boundary.
 
 ## Accessibility
 
 VenueFlow is built to **WCAG 2.1 AA** standards:
 
-- Semantic HTML5 landmarks (`<main>`, `<nav>`, `<header>`, `<section>`)
-- ARIA roles and labels on all interactive components
-- Skip navigation link for keyboard users
-- Minimum 4.5:1 color contrast ratio throughout
-- Full keyboard navigation support
-- Screen reader compatible alerts via `role="alert"` and `aria-live`
-- Focus management on modal/chat interactions
+- **Semantic HTML5 landmarks:** `<header>`, `<nav>`, `<main>`, `<section>` used throughout
+- **Skip-to-content link** (visible on keyboard focus) jumps past the navbar to `#main-content`
+- **ARIA roles and labels** on every interactive element (`role="dialog"`, `aria-modal`, `role="alert"`, `aria-live="polite"`, `role="list"`/`listitem` for the heatmap)
+- **Focus management:** custom `useFocusTrap` hook traps focus inside modals; focus is restored on close; Escape closes dialogs
+- **Visible focus rings** on every focusable element (Tailwind `focus:ring-*`)
+- **Colour contrast:** 4.5:1 minimum ratio throughout
+- **Automated audits:** `jest-axe` runs a WCAG compliance check on every page-level component in CI; `eslint-plugin-jsx-a11y` enforces static a11y rules at lint time
 
 ## Assumptions
 
-- Stadium sections are pre-seeded in Firestore; fallback mock data is used if DB is empty
-- Staff authentication is out of scope for this hackathon prototype
-- Crowd density updates are crowdsourced and cached for 30 seconds to balance freshness vs. cost
+- Stadium sections are pre-seeded in Firestore via `npm run seed`; if the collections are empty the backend falls back to deterministic mock data so the demo is never broken
+- Staff authentication is a shared secret for this hackathon prototype; a production deployment would use Firebase Auth with role-based access control
+- Crowd density updates are treated as crowdsourced and cached server-side for 30 seconds to balance freshness against Firestore read cost
+- Gemini responses are best-effort — every AI call falls back to a friendly, static message if the upstream API fails so the UI never appears broken
 
 ## License
 

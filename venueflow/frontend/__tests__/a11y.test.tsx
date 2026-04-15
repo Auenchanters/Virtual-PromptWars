@@ -8,11 +8,18 @@ import QueueStatus from '../src/components/QueueStatus';
 import GeminiChatbot from '../src/components/GeminiChatbot';
 import ItineraryPlanner from '../src/components/ItineraryPlanner';
 import AccessibleAlert from '../src/components/AccessibleAlert';
+import StadiumMap from '../src/components/StadiumMap';
+import CrowdForecast from '../src/components/CrowdForecast';
 import * as hooks from '../src/hooks/useGemini';
 import * as api from '../src/services/api';
 
 jest.mock('../src/hooks/useGemini');
 jest.mock('../src/services/api');
+jest.mock('@react-google-maps/api', () => ({
+    useJsApiLoader: () => ({ isLoaded: false, loadError: null }),
+    GoogleMap: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+    Marker: () => null,
+}));
 
 expect.extend(toHaveNoViolations);
 
@@ -38,7 +45,7 @@ describe('Accessibility landmarks and semantics', () => {
         );
         expect(screen.getByLabelText(/Section 101.*High crowd/)).toBeInTheDocument();
         expect(screen.getByLabelText(/Section 102.*Low crowd/)).toBeInTheDocument();
-        expect(screen.getByRole('grid', { name: /Stadium crowd density map/i })).toBeInTheDocument();
+        expect(screen.getByRole('list', { name: /Stadium crowd density map/i })).toBeInTheDocument();
     });
 
     it('QueueStatus uses a labeled region heading', () => {
@@ -100,6 +107,25 @@ const componentCases = [
     {
         name: 'AccessibleAlert',
         element: <AccessibleAlert message="Gate 7 is now open" />,
+    },
+    {
+        name: 'CrowdHeatmap',
+        element: (
+            <CrowdHeatmap
+                data={[
+                    { section: '101', density: 'HIGH' as const },
+                    { section: '102', density: 'LOW' as const },
+                ]}
+            />
+        ),
+    },
+    {
+        name: 'StadiumMap (loading)',
+        element: <StadiumMap crowd={[]} />,
+    },
+    {
+        name: 'CrowdForecast',
+        element: <CrowdForecast />,
     },
 ];
 
