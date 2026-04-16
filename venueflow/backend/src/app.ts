@@ -20,6 +20,7 @@ import crowdRoutes from './routes/crowd';
 import queueRoutes from './routes/queue';
 import geminiRoutes from './routes/gemini';
 import staffRoutes from './routes/staff';
+import mapsRoutes from './routes/maps';
 
 if (!process.env.STAFF_API_KEY) {
     logger.warn('STAFF_API_KEY not set; staff broadcast endpoint will return 503');
@@ -106,6 +107,7 @@ app.use('/health', apiHelmet);
 app.use('/api/crowd', crowdRoutes);
 app.use('/api/queue', queueRoutes);
 app.use('/api/gemini', geminiRoutes);
+app.use('/api/maps', mapsRoutes);
 app.use('/api/staff', writeLimiter, staffRoutes);
 
 app.get('/health', (req: Request, res: Response) => {

@@ -58,8 +58,10 @@ describe('geminiService', () => {
             const result = await chatWithGemini('Where is gate 4?');
             expect(result).toBe('mock response');
             expect(mockGenerateContent).toHaveBeenCalledTimes(1);
-            const [arg] = mockGenerateContent.mock.calls[0] as [unknown];
-            expect(arg).not.toHaveProperty('tools');
+            const [arg] = mockGenerateContent.mock.calls[0] as [{ tools?: unknown }];
+            // Google Search grounding tool is attached to the chat request.
+            expect(arg).toHaveProperty('tools');
+            expect(arg.tools).toEqual([{ googleSearch: {} }]);
         });
 
         it('generateCrowdSummary returns text for crowd data', async () => {

@@ -14,6 +14,8 @@ const envSchema = z.object({
     FIREBASE_PRIVATE_KEY: z.string().optional(),
     /** Optional — API key for the staff broadcast endpoint; if unset the endpoint returns 503. */
     STAFF_API_KEY: z.string().optional(),
+    /** Optional — server-side Google Maps key for Distance Matrix API; falls back to VITE_GOOGLE_MAPS_API_KEY. */
+    GOOGLE_MAPS_BACKEND_API_KEY: z.string().optional(),
     /** Base URL of the frontend for CORS. Defaults to local dev server so dev works out of the box. */
     FRONTEND_URL: z.string().min(1).default('http://localhost:5173'),
     /** Runtime environment — used to gate stack traces and enforce production-only checks. */

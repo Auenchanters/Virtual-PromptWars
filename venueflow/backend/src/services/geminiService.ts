@@ -93,9 +93,16 @@ async function chatWithGemini(userMessage: string): Promise<string> {
         try {
             const prompt = `${CHAT_SYSTEM_PROMPT} Question: ${userMessage}`;
 
-            const result = await model.generateContent({
+            // Google Search grounding — supported by Gemini 2.x models at runtime,
+            // but the `googleSearch` tool shape is not declared in the 0.21 SDK's
+            // `Tool` union, so the request object is widened to bypass the type
+            // check. Falls through to the existing catch on any runtime rejection.
+            const request = {
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            });
+                tools: [{ googleSearch: {} }],
+            } as unknown as Parameters<typeof model.generateContent>[0];
+
+            const result = await model.generateContent(request);
             return result.response.text();
         } catch (err: unknown) {
             logger.error('Gemini chat error', { error: (err instanceof Error ? err.message : String(err)) });
