@@ -28,6 +28,8 @@ jest.mock('../src/services/loggingService', () => ({
 
 import app from '../src/app';
 import { chatWithGemini, generateItinerary } from '../src/services/geminiService';
+import { getCrowdData } from '../src/services/firestoreService';
+import { exportAnalyticsSnapshot } from '../src/services/storageService';
 
 describe('POST /api/gemini/chat', () => {
     it('returns 200 with AI reply for valid message', async () => {
@@ -114,5 +116,51 @@ describe('POST /api/gemini/chat error handling', () => {
             .post('/api/gemini/chat')
             .send({ message: 'trigger error' });
         expect(response.status).toBe(500);
+    });
+});
+
+describe('GET /api/gemini/summary', () => {
+    it('returns 200 with crowd summary', async () => {
+        const response = await request(app).get('/api/gemini/summary');
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('summary', 'Crowd is moderate today');
+    });
+
+    it('returns 500 when Firestore getCrowdData throws', async () => {
+        (getCrowdData as jest.Mock).mockRejectedValueOnce(new Error('Firestore down'));
+        const response = await request(app).get('/api/gemini/summary');
+        expect(response.status).toBe(500);
+    });
+});
+
+describe('GET /api/gemini/forecast', () => {
+    it('returns 200 with crowd forecast', async () => {
+        const response = await request(app).get('/api/gemini/forecast');
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('forecast', 'Mocked forecast');
+    });
+
+    it('returns 500 when Firestore getCrowdData throws', async () => {
+        (getCrowdData as jest.Mock).mockRejectedValueOnce(new Error('Firestore down'));
+        const response = await request(app).get('/api/gemini/forecast');
+        expect(response.status).toBe(500);
+    });
+});
+
+describe('Route-level catch callbacks', () => {
+    it('POST /api/gemini/itinerary succeeds when getCrowdData rejects (exercises .catch(() => []))', async () => {
+        (getCrowdData as jest.Mock).mockRejectedValueOnce(new Error('Firestore down'));
+        const response = await request(app)
+            .post('/api/gemini/itinerary')
+            .send({ section: '112' });
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('itinerary');
+    });
+
+    it('GET /api/gemini/summary succeeds when exportAnalyticsSnapshot rejects (exercises .catch(() => {}))', async () => {
+        (exportAnalyticsSnapshot as jest.Mock).mockRejectedValueOnce(new Error('Storage failed'));
+        const response = await request(app).get('/api/gemini/summary');
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('summary');
     });
 });

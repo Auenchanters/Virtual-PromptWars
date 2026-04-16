@@ -1,3 +1,14 @@
 # Internal planning docs not meant for judges
 Context.md
 plan1.md
+
+# Judge-evaluation artifacts & screenshots (exceed 1 MB repo limit)
+AI Judge Evaluat.md
+RULES.md
+image.png
+
+# Local test/build artifacts
+venueflow/frontend/test-output.txt
+
+# Local IDE / agent settings
+.claude/settings.json

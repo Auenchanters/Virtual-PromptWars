@@ -3,13 +3,14 @@ import { chatWithGemini, generateItinerary, generateCrowdForecast, generateCrowd
 import { getCrowdData, getQueueData } from '../services/firestoreService';
 import { exportAnalyticsSnapshot } from '../services/storageService';
 import { chatSchema, itinerarySchema } from '../schemas/requests';
+import { writeLimiter } from '../middleware/rateLimiter';
 
 const router = express.Router();
 
 /**
  * POST /api/gemini/chat — AI venue assistant.
  */
-router.post('/chat', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/chat', writeLimiter, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const parsed = chatSchema.safeParse(req.body);
         if (!parsed.success) {
@@ -31,7 +32,7 @@ router.post('/chat', async (req: Request, res: Response, next: NextFunction) => 
 /**
  * POST /api/gemini/itinerary — crowd-aware personalized itinerary.
  */
-router.post('/itinerary', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/itinerary', writeLimiter, async (req: Request, res: Response, next: NextFunction) => {
     try {
         const parsed = itinerarySchema.safeParse(req.body);
         if (!parsed.success) {

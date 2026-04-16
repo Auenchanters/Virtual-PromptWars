@@ -17,6 +17,7 @@ import {
     buildForecastPrompt,
     buildItineraryPrompt,
     buildCrowdContext,
+    buildCrowdSummaryPrompt,
 } from '../config/prompts';
 
 const apiKey = process.env.GEMINI_API_KEY;
@@ -94,7 +95,6 @@ async function chatWithGemini(userMessage: string): Promise<string> {
 
             const result = await model.generateContent({
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                tools: [],
             });
             return result.response.text();
         } catch (err: unknown) {
@@ -112,9 +112,7 @@ async function chatWithGemini(userMessage: string): Promise<string> {
 async function generateCrowdSummary(crowdData: CrowdSection[]): Promise<string> {
     try {
         return await cached(responseCache, keyOf('summary', crowdData), async () => {
-            const prompt =
-                `Summarize the following stadium crowd data in one friendly sentence for attendees: ` +
-                JSON.stringify(crowdData);
+            const prompt = buildCrowdSummaryPrompt(JSON.stringify(crowdData));
             const result = await model.generateContent(prompt);
             return result.response.text();
         });

@@ -31,6 +31,7 @@ jest.mock('../src/services/loggingService', () => ({
 }));
 
 import app from '../src/app';
+import { getQueueData } from '../src/services/firestoreService';
 
 describe('Queue API', () => {
     it('GET /api/queue returns 200 with array of queues', async () => {
@@ -60,5 +61,11 @@ describe('Queue API', () => {
         const types = response.body.map((q: { type: string }) => q.type);
         expect(types).toContain('gate');
         expect(types).toContain('concessions');
+    });
+
+    it('GET /api/queue returns 500 when getQueueData throws', async () => {
+        (getQueueData as jest.Mock).mockRejectedValueOnce(new Error('Firestore down'));
+        const response = await request(app).get('/api/queue');
+        expect(response.status).toBe(500);
     });
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { GoogleMap, useJsApiLoader, MarkerF } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, MarkerF, Libraries } from '@react-google-maps/api';
 import { CrowdSection } from '../types';
 import { densityMarkerIcon, densityLabel } from '../utils/density';
 
@@ -17,7 +17,7 @@ const mapContainerStyle = {
 const STADIUM_CENTER = { lat: 40.7128, lng: -74.006 };
 
 // MarkerF (legacy) does not require the 'marker' library — that is only needed for AdvancedMarkerElement
-const libraries: string[] = [];
+const libraries: Libraries = [];
 
 const SECTION_COORDINATES: Record<string, { lat: number; lng: number }> = {
   '101': { lat: 40.713, lng: -74.0062 },
@@ -26,10 +26,13 @@ const SECTION_COORDINATES: Record<string, { lat: number; lng: number }> = {
   '104': { lat: 40.7132, lng: -74.0055 },
 };
 
-function getSectionPosition(section: string, index: number): { lat: number; lng: number } {
-  return SECTION_COORDINATES[section] ?? {
-    lat: STADIUM_CENTER.lat + (index * 0.001),
-    lng: STADIUM_CENTER.lng + (index * 0.001),
+function getSectionPosition(section: string, index: number, total: number): { lat: number; lng: number } {
+  if (SECTION_COORDINATES[section]) return SECTION_COORDINATES[section];
+  const angle = (2 * Math.PI * index) / Math.max(total, 1);
+  const radius = 0.0008;
+  return {
+    lat: STADIUM_CENTER.lat + radius * Math.cos(angle),
+    lng: STADIUM_CENTER.lng + radius * Math.sin(angle),
   };
 }
 
@@ -81,12 +84,12 @@ const StadiumMap: React.FC<StadiumMapProps> = ({ crowd }) => {
           mapContainerStyle={mapContainerStyle}
           center={STADIUM_CENTER}
           zoom={17}
-          options={{ mapId: 'VENUEFLOW_DEMO_MAP' }}
+          options={{}}
         >
           {crowd.map((section, index) => (
             <MarkerF
               key={section.section}
-              position={getSectionPosition(section.section, index)}
+              position={getSectionPosition(section.section, index, crowd.length)}
               icon={densityMarkerIcon(section.density)}
               title={`Section ${section.section} — ${densityLabel(section.density)}`}
             />

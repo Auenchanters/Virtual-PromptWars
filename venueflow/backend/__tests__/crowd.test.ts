@@ -33,8 +33,29 @@ jest.mock('../src/services/loggingService', () => ({
 }));
 
 import app from '../src/app';
+import { getCrowdData, getQueueData } from '../src/services/firestoreService';
+import { exportAnalyticsSnapshot } from '../src/services/storageService';
+import { generateCrowdForecast } from '../src/services/geminiService';
+import { forecastCache } from '../src/routes/crowd';
+
+const defaultCrowd = [
+    { section: '101', density: 'HIGH' },
+    { section: '102', density: 'MEDIUM' },
+    { section: '103', density: 'LOW' },
+];
+const defaultQueues = [{ id: 'gate-1', type: 'gate', waitTimeMinutes: 15 }];
 
 describe('Crowd API', () => {
+    beforeEach(() => {
+        forecastCache.flushAll();
+        (getCrowdData as jest.Mock).mockReset().mockResolvedValue(defaultCrowd);
+        (getQueueData as jest.Mock).mockReset().mockResolvedValue(defaultQueues);
+        (exportAnalyticsSnapshot as jest.Mock).mockReset().mockResolvedValue(undefined);
+        (generateCrowdForecast as jest.Mock).mockReset().mockResolvedValue(
+            'Expect moderate crowds; try section 103.'
+        );
+    });
+
     it('GET /api/crowd returns 200 with array of sections', async () => {
         const response = await request(app).get('/api/crowd');
         expect(response.status).toBe(200);
@@ -75,5 +96,23 @@ describe('Crowd API', () => {
         expect(second.status).toBe(200);
         expect(second.body.forecast).toBe(first.body.forecast);
         expect(second.headers['cache-control']).toMatch(/max-age/);
+    });
+
+    it('GET /api/crowd returns 500 when getCrowdData throws', async () => {
+        (getCrowdData as jest.Mock).mockRejectedValueOnce(new Error('Firestore down'));
+        const response = await request(app).get('/api/crowd');
+        expect(response.status).toBe(500);
+    });
+
+    it('GET /api/crowd/forecast returns 500 when getCrowdData throws', async () => {
+        (getCrowdData as jest.Mock).mockRejectedValueOnce(new Error('Firestore down'));
+        const response = await request(app).get('/api/crowd/forecast');
+        expect(response.status).toBe(500);
+    });
+
+    it('GET /api/crowd still returns 200 when exportAnalyticsSnapshot rejects', async () => {
+        (exportAnalyticsSnapshot as jest.Mock).mockRejectedValueOnce(new Error('Storage failed'));
+        const response = await request(app).get('/api/crowd');
+        expect(response.status).toBe(200);
     });
 });

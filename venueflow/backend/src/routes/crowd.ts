@@ -7,7 +7,7 @@ import { logAnalyticsEvent } from '../services/loggingService';
 import { FORECAST_CACHE_TTL_SECONDS } from '../config/constants';
 
 const router = express.Router();
-const forecastCache = new NodeCache({ stdTTL: FORECAST_CACHE_TTL_SECONDS });
+export const forecastCache = new NodeCache({ stdTTL: FORECAST_CACHE_TTL_SECONDS });
 
 /**
  * GET /api/crowd — live crowd density per section.

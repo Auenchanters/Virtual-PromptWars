@@ -29,7 +29,7 @@ const CrowdHeatmap: React.FC<CrowdHeatmapProps> = ({ data }) => {
         >
           <span className="text-lg">Sec {section.section}</span>
           <span className="text-sm bg-black bg-opacity-50 px-2 py-1 mt-2 rounded">
-            <span>{densityIcon(section.density)} </span><span>{section.density}</span>
+            <span aria-hidden="true">{densityIcon(section.density)} </span><span>{section.density}</span>
           </span>
         </div>
       );

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { getItinerary } from '../services/api';
 import { MAX_SECTION_LENGTH } from '../utils/constants';
 
@@ -8,6 +8,10 @@ const ItineraryPlanner: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inflightRef = useRef(false);
+
+  useEffect(() => {
+    return () => { inflightRef.current = false; };
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -82,7 +86,7 @@ const ItineraryPlanner: React.FC = () => {
           className="mt-6 p-4 border rounded bg-gray-50"
           role="region"
           aria-live="polite"
-          aria-atomic="true"
+          aria-atomic="false"
           aria-label="Generated itinerary"
         >
           <h3 className="font-bold text-lg mb-2">Your Itinerary</h3>

@@ -59,7 +59,7 @@ describe('geminiService', () => {
             expect(result).toBe('mock response');
             expect(mockGenerateContent).toHaveBeenCalledTimes(1);
             const [arg] = mockGenerateContent.mock.calls[0] as [unknown];
-            expect(arg).toHaveProperty('tools');
+            expect(arg).not.toHaveProperty('tools');
         });
 
         it('generateCrowdSummary returns text for crowd data', async () => {

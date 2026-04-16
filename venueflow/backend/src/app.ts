@@ -24,8 +24,8 @@ import staffRoutes from './routes/staff';
 if (!process.env.STAFF_API_KEY) {
     logger.warn('STAFF_API_KEY not set; staff broadcast endpoint will return 503');
 }
-if (!process.env.FRONTEND_URL && process.env.NODE_ENV === 'production') {
-    throw new Error('FRONTEND_URL must be set in production');
+if (env.FRONTEND_URL === 'http://localhost:5173' && process.env.NODE_ENV === 'production') {
+    throw new Error('FRONTEND_URL must be explicitly set in production (cannot use localhost default)');
 }
 
 const app = express();
@@ -76,10 +76,16 @@ const allowedOrigins: string[] = [env.FRONTEND_URL];
 
 const apiCors = cors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-        // Allow requests with no origin — covers server-to-server calls, curl/Postman,
-        // and same-origin navigations where browsers omit the Origin header. Safe because
-        // authentication is enforced separately via X-Staff-Key for privileged endpoints.
-        if (!origin) { callback(null, true); return; }
+        // In production, require an Origin header to prevent scraping of unauthenticated
+        // read endpoints. In development, allow no-origin requests for curl/Postman.
+        if (!origin) {
+            if (process.env.NODE_ENV === 'production') {
+                callback(new Error('Origin header required in production'));
+                return;
+            }
+            callback(null, true);
+            return;
+        }
         // Allow explicitly listed origins
         if (allowedOrigins.includes(origin)) { callback(null, true); return; }
         // Allow same-origin requests (frontend served from same Cloud Run URL)
@@ -88,7 +94,7 @@ const apiCors = cors({
         }
         callback(new Error('Not allowed by CORS'));
     },
-    allowedHeaders: ['Content-Type', 'X-Staff-Key', 'X-Request-Id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Staff-Key', 'X-Request-Id'],
     methods: ['GET', 'POST', 'OPTIONS'],
     optionsSuccessStatus: 200,
 });
@@ -99,7 +105,7 @@ app.use('/health', apiHelmet);
 
 app.use('/api/crowd', crowdRoutes);
 app.use('/api/queue', queueRoutes);
-app.use('/api/gemini', writeLimiter, geminiRoutes);
+app.use('/api/gemini', geminiRoutes);
 app.use('/api/staff', writeLimiter, staffRoutes);
 
 app.get('/health', (req: Request, res: Response) => {

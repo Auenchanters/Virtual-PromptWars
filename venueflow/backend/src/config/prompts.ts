@@ -47,3 +47,11 @@ export function buildItineraryPrompt(section: string, crowdContext: string): str
         `${section}. Suggest arrival time, best gate, and nearest concessions. ${crowdContext}`
     );
 }
+
+/**
+ * Build the crowd summary prompt from serialized crowd data.
+ * The prompt instructs the model to produce a single friendly sentence.
+ */
+export function buildCrowdSummaryPrompt(crowdJson: string): string {
+    return `Summarize the following stadium crowd data in one friendly sentence for attendees: ${crowdJson}`;
+}
