@@ -23,6 +23,15 @@ jest.mock('../src/services/geminiService', () => ({
     generateCrowdForecast: jest.fn().mockResolvedValue('Expect moderate crowds; try section 103.'),
 }));
 
+jest.mock('../src/services/storageService', () => ({
+    exportAnalyticsSnapshot: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../src/services/loggingService', () => ({
+    logAnalyticsEvent: jest.fn(),
+    logWarningEvent: jest.fn(),
+}));
+
 import app from '../src/app';
 
 describe('Crowd API', () => {
@@ -58,5 +67,13 @@ describe('Crowd API', () => {
         expect(response.body).toHaveProperty('forecast');
         expect(typeof response.body.forecast).toBe('string');
         expect(response.body.forecast.length).toBeGreaterThan(0);
+    });
+
+    it('GET /api/crowd/forecast returns cached response on second call', async () => {
+        const first = await request(app).get('/api/crowd/forecast');
+        const second = await request(app).get('/api/crowd/forecast');
+        expect(second.status).toBe(200);
+        expect(second.body.forecast).toBe(first.body.forecast);
+        expect(second.headers['cache-control']).toMatch(/max-age/);
     });
 });

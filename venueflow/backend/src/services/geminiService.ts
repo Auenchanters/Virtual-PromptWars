@@ -77,9 +77,6 @@ async function cached(
  * Responses are cached by message hash so repeated FAQs (e.g. "where is gate 4?")
  * don't re-hit Gemini within the cache window.
  *
- * Uses a structured GenerateContentRequest (contents + tools) rather than
- * a plain string so callers can extend with function-calling in future.
- *
  * @throws When the underlying Gemini call fails or the message is missing.
  */
 async function chatWithGemini(userMessage: string): Promise<string> {

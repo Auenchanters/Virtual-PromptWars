@@ -80,7 +80,6 @@ const StadiumMap: React.FC<StadiumMapProps> = ({ crowd }) => {
           mapContainerStyle={mapContainerStyle}
           center={STADIUM_CENTER}
           zoom={17}
-          mapId="VENUEFLOW_DEMO_MAP"
           options={{ mapId: 'VENUEFLOW_DEMO_MAP' }}
         >
           {crowd.map((section) => (

@@ -29,6 +29,15 @@ jest.mock('../src/services/geminiService', () => ({
     generateCrowdForecast: jest.fn().mockResolvedValue('Mocked forecast'),
 }));
 
+jest.mock('../src/services/storageService', () => ({
+    exportAnalyticsSnapshot: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../src/services/loggingService', () => ({
+    logAnalyticsEvent: jest.fn(),
+    logWarningEvent: jest.fn(),
+}));
+
 import app from '../src/app';
 
 const VALID_BODY = { announcement: 'Gate 7 is now open for entry' };

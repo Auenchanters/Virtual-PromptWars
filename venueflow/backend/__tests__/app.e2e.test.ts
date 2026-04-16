@@ -26,6 +26,15 @@ jest.mock('../src/services/realtimeService', () => ({
     broadcastMessage: jest.fn().mockResolvedValue(undefined),
 }));
 
+jest.mock('../src/services/storageService', () => ({
+    exportAnalyticsSnapshot: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../src/services/loggingService', () => ({
+    logAnalyticsEvent: jest.fn(),
+    logWarningEvent: jest.fn(),
+}));
+
 import app from '../src/app';
 
 describe('E2E: GET /health', () => {

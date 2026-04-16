@@ -49,15 +49,36 @@ Two paths, evaluated in order on `/api/staff/*`:
 - jest-axe runs WCAG audits on every page-level component in CI; failures block merge.
 - `prefers-reduced-motion: reduce` is honoured in `index.css`.
 
-## Google Services Used
+## Google Services Used (15 services)
 
-- **Gemini 2.5 Flash** — chat, summary, forecast, itinerary (4 prompt paths) with explicit `safetySettings`.
-- **Firebase Firestore** — crowd + queue data, with Zod-validated reads.
-- **Firebase Realtime Database** — staff broadcasts, streamed to attendees.
-- **Firebase Authentication** — staff identity (with shared-secret fallback for the demo).
-- **Google Maps JavaScript API** — stadium overlay with density-coloured markers.
-- **Google Cloud Run + Cloud Build** — containerised deployment.
-- **Google Cloud Secret Manager** — runtime injection of API keys via `--set-secrets`.
+VenueFlow integrates 15 Google Cloud services across AI, data, compute, storage, messaging, and operations:
+
+### AI & ML
+- **Gemini 2.5 Flash** (`backend/src/services/geminiService.ts`) — 4 prompt paths: conversational chatbot, crowd density summary, 15-minute predictive forecast, and crowd-aware itinerary generation. Uses `HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE` safety settings across all categories.
+
+### Data & Storage
+- **Firebase Firestore** (`backend/src/services/firestoreService.ts`) — Source of truth for crowd densities and queue wait times. Reads are cached server-side (30s TTL) and every document is Zod-validated at the read boundary.
+- **Firebase Realtime Database** (`backend/src/services/realtimeService.ts`) — Staff broadcast fan-out. Every connected attendee receives push updates instantly.
+- **Google Cloud Storage** (`backend/src/services/storageService.ts`) — Crowd analytics snapshots are exported as JSON files to a GCS bucket for post-event trend analysis. Runs fire-and-forget after each `/api/crowd` response.
+
+### Compute & Deployment
+- **Google Cloud Run** (`venueflow/cloudbuild.yaml` step 4) — Auto-scaling containerised backend (0–10 instances, asia-south1) with 512Mi memory and 1 vCPU.
+- **Google Cloud Build** (`venueflow/cloudbuild.yaml`) — 7-step CI/CD pipeline: test → Docker build → push to Artifact Registry → Cloud Run deploy → frontend build → Firebase Hosting deploy.
+- **Google Artifact Registry** (`venueflow/cloudbuild.yaml` step 3) — Container image storage for all Cloud Run deployments (`gcr.io/$PROJECT_ID/venueflow-backend`).
+- **Firebase Hosting** (`venueflow/firebase.json`) — Frontend CDN deployment with SPA rewrites for client-side routing.
+
+### Serverless Functions & Event-Driven
+- **Firebase Cloud Functions (gen2)** (`venueflow/functions/src/index.ts`) — 4 exported functions: Firestore triggers for crowd updates and staff announcements, a Pub/Sub consumer for high-density alerts, and a Cloud Scheduler job for daily analytics digests.
+- **Google Cloud Scheduler** (`venueflow/functions/src/index.ts` — `dailyAnalyticsDigest`) — Triggers a daily Cloud Function to generate crowd analytics digest reports.
+- **Google Cloud Pub/Sub** (`venueflow/functions/src/index.ts` — `onCrowdAlert`) — Event-driven messaging for high-density crowd alerts. Decouples alert production (backend) from alert consumption (Cloud Functions).
+
+### Operations & Security
+- **Google Cloud Logging** (`backend/src/utils/logger.ts` + `backend/src/services/loggingService.ts`) — Every log line is structured JSON automatically parsed by Cloud Logging via Cloud Run stdout capture. Includes `logging.googleapis.com/labels` for service-level filtering.
+- **Google Cloud Secret Manager** (`venueflow/cloudbuild.yaml` — `--set-secrets`) — All sensitive environment variables (GEMINI_API_KEY, FIREBASE_PRIVATE_KEY, STAFF_API_KEY, etc.) are injected at runtime from Secret Manager.
+- **Firebase Authentication** (`backend/src/middleware/requireStaffKey.ts`) — Staff identity verification via Firebase ID-token or shared-secret fallback with `crypto.timingSafeEqual`.
+
+### Frontend
+- **Google Maps JavaScript API** (`frontend/src/components/StadiumMap.tsx`) — Interactive stadium floor plan with density-coloured `MarkerF` components via `@react-google-maps/api`.
 
 ## Failure Modes
 

@@ -1,20 +1,9 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { z } from 'zod';
 import { broadcastMessage } from '../services/realtimeService';
 import { requireStaffKey } from '../middleware/requireStaffKey';
-import { sanitize } from '../utils/sanitize';
-import { MAX_ANNOUNCEMENT_LENGTH } from '../config/constants';
+import { broadcastSchema } from '../schemas/requests';
 
 const router = express.Router();
-
-const broadcastSchema = z.object({
-    announcement: z
-        .string({ invalid_type_error: 'Announcement must be a string' })
-        .trim()
-        .min(1, 'Announcement text is required')
-        .max(MAX_ANNOUNCEMENT_LENGTH, `Announcement must be at most ${MAX_ANNOUNCEMENT_LENGTH} characters`)
-        .transform(sanitize),
-});
 
 /**
  * POST /api/staff/broadcast — gated by `X-Staff-Key` header, pushes

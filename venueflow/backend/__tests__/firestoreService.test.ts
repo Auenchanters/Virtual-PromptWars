@@ -81,6 +81,31 @@ describe('firestoreService – getCrowdData', () => {
 
         await expect(getCrowdData()).rejects.toThrow('Firestore unavailable');
     });
+
+    it('drops malformed crowd documents and returns only valid ones', async () => {
+        mockCacheGet.mockReturnValue(undefined);
+        mockGet.mockResolvedValue(
+            makeSnapshot([
+                { id: 'good', data: { section: '101', density: 'HIGH' } },
+                { id: 'bad', data: { section: '', density: 'INVALID_VALUE' } },
+            ]),
+        );
+
+        const result = await getCrowdData();
+        expect(result).toEqual([{ id: 'good', section: '101', density: 'HIGH' }]);
+    });
+
+    it('returns fallback when all crowd documents are malformed', async () => {
+        mockCacheGet.mockReturnValue(undefined);
+        mockGet.mockResolvedValue(
+            makeSnapshot([
+                { id: 'bad1', data: { section: 123, density: null } },
+            ]),
+        );
+
+        const result = await getCrowdData();
+        expect(result.length).toBe(4); // fallback data
+    });
 });
 
 describe('firestoreService – getQueueData', () => {
@@ -127,5 +152,30 @@ describe('firestoreService – getQueueData', () => {
         mockGet.mockRejectedValue(new Error('Connection lost'));
 
         await expect(getQueueData()).rejects.toThrow('Connection lost');
+    });
+
+    it('drops malformed queue documents and returns only valid ones', async () => {
+        mockCacheGet.mockReturnValue(undefined);
+        mockGet.mockResolvedValue(
+            makeSnapshot([
+                { id: 'good', data: { type: 'gate', waitTimeMinutes: 5 } },
+                { id: 'bad', data: { type: '', waitTimeMinutes: -1 } },
+            ]),
+        );
+
+        const result = await getQueueData();
+        expect(result).toEqual([{ id: 'good', type: 'gate', waitTimeMinutes: 5 }]);
+    });
+
+    it('returns fallback when all queue documents are malformed', async () => {
+        mockCacheGet.mockReturnValue(undefined);
+        mockGet.mockResolvedValue(
+            makeSnapshot([
+                { id: 'bad1', data: { type: null, waitTimeMinutes: 'not-a-number' } },
+            ]),
+        );
+
+        const result = await getQueueData();
+        expect(result.length).toBe(3); // fallback data
     });
 });

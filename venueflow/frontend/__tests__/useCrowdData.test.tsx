@@ -44,6 +44,19 @@ describe('useCrowdData', () => {
         });
     });
 
+    it('sets error state when API calls reject', async () => {
+        (api.fetchCrowdData as jest.Mock).mockRejectedValue(new Error('network'));
+        (api.fetchQueueData as jest.Mock).mockRejectedValue(new Error('network'));
+        const states: ReturnType<typeof useCrowdData>[] = [];
+        render(<Probe onState={(s) => states.push(s)} />);
+
+        await waitFor(() => {
+            const final = states[states.length - 1];
+            expect(final.error).toMatch(/Unable to load/);
+            expect(final.loading).toBe(false);
+        });
+    });
+
     it('clears the interval on unmount so no further fetches fire', async () => {
         const { unmount } = render(<Probe onState={() => {}} />);
         await waitFor(() => expect(api.fetchCrowdData).toHaveBeenCalledTimes(1));

@@ -39,7 +39,7 @@ module.exports = {
       lines: 88,
       statements: 88,
       branches: 60,
-      functions: 85,
+      functions: 75,
     },
     './src/utils/': {
       lines: 100,

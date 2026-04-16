@@ -49,4 +49,16 @@ describe('StadiumMap', () => {
         expect(markers).toHaveLength(2);
         expect(markers[0].getAttribute('title')).toMatch(/Section 101/);
     });
+
+    it('renders a marker for an unknown section using fallback position', () => {
+        (useJsApiLoader as jest.Mock).mockReturnValue({ isLoaded: true, loadError: null });
+        render(
+            <StadiumMap
+                crowd={[{ section: '999', density: 'MEDIUM' }]}
+            />
+        );
+        const markers = screen.getAllByTestId('map-marker');
+        expect(markers).toHaveLength(1);
+        expect(markers[0].getAttribute('title')).toMatch(/Section 999/);
+    });
 });

@@ -36,6 +36,13 @@ describe('StaffPage', () => {
         });
     });
 
+    it('shows validation error when submitting an empty announcement', () => {
+        render(<StaffPage />);
+        fireEvent.click(screen.getByRole('button', { name: /Broadcast Live/i }));
+        expect(screen.getByRole('alert')).toHaveTextContent(/Announcement text is required/i);
+        expect(screen.getByLabelText(/Message to all attendees/i)).toHaveAttribute('aria-invalid', 'true');
+    });
+
     it('shows an accessible error alert when the API call fails', async () => {
         (api.broadcastStaffAlert as jest.Mock).mockRejectedValue(new Error('network'));
         render(<StaffPage />);

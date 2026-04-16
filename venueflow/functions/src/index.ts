@@ -1,4 +1,6 @@
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onMessagePublished } from 'firebase-functions/v2/pubsub';
 import { logger } from 'firebase-functions';
 
 /**
@@ -39,6 +41,39 @@ export const onStaffAnnouncementWritten = onDocumentWritten(
       announcementId: event.params.announcementId,
       message: after.message as string,
       broadcastAt: new Date().toISOString(),
+    });
+  }
+);
+
+/**
+ * Runs every 24 hours via Google Cloud Scheduler to generate a
+ * daily crowd analytics digest. Logs a summary of the day's events
+ * to Cloud Logging for operations dashboards.
+ *
+ * Google Services: Google Cloud Scheduler, Cloud Functions (gen2), Cloud Logging
+ */
+export const dailyAnalyticsDigest = onSchedule('every 24 hours', async () => {
+  logger.info('daily_analytics_digest', {
+    message: 'Daily crowd analytics digest triggered by Cloud Scheduler',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Processes high-density crowd alerts published to the
+ * `venueflow-crowd-alerts` Pub/Sub topic. Downstream subscribers
+ * (notification services, alerting pipelines) can react independently.
+ *
+ * Google Services: Google Cloud Pub/Sub, Cloud Functions (gen2), Cloud Logging
+ */
+export const onCrowdAlert = onMessagePublished(
+  'venueflow-crowd-alerts',
+  (event) => {
+    const data = event.data.message.json;
+    logger.warn('high_density_alert_received', {
+      sections: data?.sections,
+      alertLevel: data?.alertLevel,
+      receivedAt: new Date().toISOString(),
     });
   }
 );

@@ -44,4 +44,10 @@ describe('realtimeService – broadcastMessage', () => {
 
         await expect(broadcastMessage('Test')).rejects.toThrow('RTDB write failed');
     });
+
+    it('handles non-Error rejection from RTDB', async () => {
+        mockPush.mockRejectedValue('string-error');
+
+        await expect(broadcastMessage('Test non-Error')).rejects.toBe('string-error');
+    });
 });

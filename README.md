@@ -71,15 +71,25 @@ JS API        (Firestore triggers)
 
 ## Google Services Used
 
-| Service | Role | Where in Code |
-|---------|------|---------------|
-| **Gemini API (`gemini-2.5-flash`)** | Chatbot · crowd summary · 15-min forecast · itinerary planner | `backend/src/services/geminiService.ts` — 4 distinct prompt paths |
-| **Google Maps JavaScript API** | Interactive stadium floor plan with live density-coloured markers | `frontend/src/components/StadiumMap.tsx` via `@react-google-maps/api` |
-| **Firebase Firestore** | Crowd density + queue wait-time data store | `backend/src/services/firestoreService.ts` — TTL-cached reads (30 s) |
-| **Firebase Realtime Database** | Instant staff broadcast push to all attendees | `backend/src/services/realtimeService.ts` — fan-out writes, streamed to frontend |
-| **Google Cloud Run** | Auto-scaling containerised backend (0–10 instances) | `venueflow/cloudbuild.yaml` — Cloud Build → Artifact Registry → Cloud Run |
-| **Firebase Cloud Functions (gen2)** | Firestore triggers → emit structured analytics events on every crowd or staff write | `venueflow/functions/src/index.ts` — `onCrowdSectionUpdate` + `onStaffAnnouncementWritten` |
-| **Google Cloud Logging** | Structured operational audit trail — queryable density-change + broadcast history | Consumed automatically by Cloud Functions `logger.info(...)` calls |
+VenueFlow integrates **15 distinct Google Cloud services** across AI, data, compute, storage, messaging, and operations:
+
+| # | Service | Role | Where in Code |
+|---|---------|------|---------------|
+| 1 | **Gemini 2.5 Flash** (AI/ML API) | Chatbot, crowd summary, 15-min forecast, itinerary planner — 4 distinct prompt paths | `backend/src/services/geminiService.ts` |
+| 2 | **Google Maps JavaScript API** | Interactive stadium floor plan with live density-coloured markers | `frontend/src/components/StadiumMap.tsx` via `@react-google-maps/api` |
+| 3 | **Firebase Firestore** | Crowd density + queue wait-time data store with Zod-validated reads | `backend/src/services/firestoreService.ts` — TTL-cached (30 s) |
+| 4 | **Firebase Realtime Database** | Instant staff broadcast push to all connected attendees | `backend/src/services/realtimeService.ts` — fan-out writes |
+| 5 | **Firebase Authentication** | Staff identity verification with shared-secret fallback | `backend/src/middleware/requireStaffKey.ts` — `crypto.timingSafeEqual` |
+| 6 | **Firebase Hosting** | Frontend CDN deployment with SPA rewrites | `venueflow/firebase.json` — `hosting.rewrites` |
+| 7 | **Firebase Cloud Functions (gen2)** | Firestore triggers, Pub/Sub consumer, Cloud Scheduler job | `venueflow/functions/src/index.ts` — 4 exported functions |
+| 8 | **Google Cloud Run** | Auto-scaling containerised backend (0–10 instances, asia-south1) | `venueflow/cloudbuild.yaml` step 4 — `gcloud run deploy` |
+| 9 | **Google Cloud Build** | CI/CD pipeline: lint → test → Docker build → deploy | `venueflow/cloudbuild.yaml` — 7-step pipeline |
+| 10 | **Google Cloud Storage** | Crowd analytics snapshot export for post-event analysis | `backend/src/services/storageService.ts` — `admin.storage().bucket()` |
+| 11 | **Google Cloud Logging** | Structured operational audit trail (JSON-formatted, auto-parsed) | `backend/src/utils/logger.ts` + `backend/src/services/loggingService.ts` |
+| 12 | **Google Cloud Scheduler** | Daily analytics digest trigger via scheduled Cloud Function | `venueflow/functions/src/index.ts` — `dailyAnalyticsDigest` |
+| 13 | **Google Cloud Pub/Sub** | Event-driven high-density crowd alerts across microservices | `venueflow/functions/src/index.ts` — `onCrowdAlert` |
+| 14 | **Google Artifact Registry** | Container image storage for Cloud Run deployments | `venueflow/cloudbuild.yaml` step 3 — `gcr.io/$PROJECT_ID/...` |
+| 15 | **Google Cloud Secret Manager** | Runtime API key injection for all sensitive environment variables | `venueflow/cloudbuild.yaml` — `--set-secrets=GEMINI_API_KEY=...` |
 
 ## Tech Stack
 
@@ -119,10 +129,15 @@ Virtual-PromptWars/
     │   │   │   ├── queue.ts              # GET /api/queue
     │   │   │   ├── gemini.ts             # POST /api/gemini/chat | /itinerary | /forecast
     │   │   │   └── staff.ts              # POST /api/staff/broadcast
+    │   │   ├── schemas/
+    │   │   │   ├── firestore.ts          # Zod schemas for Firestore documents
+    │   │   │   └── requests.ts           # Zod schemas for API request validation
     │   │   ├── services/
     │   │   │   ├── firestoreService.ts   # Crowd + queue data (cached)
     │   │   │   ├── geminiService.ts      # Gemini AI integration (4 prompts)
-    │   │   │   └── realtimeService.ts    # Firebase RTDB broadcasts
+    │   │   │   ├── loggingService.ts     # Structured Cloud Logging events
+    │   │   │   ├── realtimeService.ts    # Firebase RTDB broadcasts
+    │   │   │   └── storageService.ts     # Cloud Storage analytics export
     │   │   ├── types/index.ts            # Shared TypeScript interfaces
     │   │   ├── utils/
     │   │   │   ├── sanitize.ts           # XSS sanitisation (xss library)
@@ -132,7 +147,7 @@ Virtual-PromptWars/
     │   └── Dockerfile
     ├── functions/
     │   ├── src/
-    │   │   └── index.ts                  # Cloud Functions (gen2) — Firestore triggers → Cloud Logging
+    │   │   └── index.ts                  # Cloud Functions (gen2) — Firestore, Pub/Sub, Scheduler triggers
     │   ├── package.json
     │   └── tsconfig.json
     └── frontend/

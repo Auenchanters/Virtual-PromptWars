@@ -122,4 +122,60 @@ describe('geminiService', () => {
             await expect(generateItinerary('unique-error-section-999')).rejects.toThrow('model overloaded');
         });
     });
+
+    describe('caching behaviour', () => {
+        it('returns cached response on second identical chat call', async () => {
+            const msg = 'cache-hit-test-message';
+            const first = await chatWithGemini(msg);
+            mockGenerateContent.mockClear();
+
+            const second = await chatWithGemini(msg);
+            expect(second).toBe(first);
+            expect(mockGenerateContent).not.toHaveBeenCalled();
+        });
+
+        it('deduplicates concurrent identical chat calls (single-flight)', async () => {
+            const msg = 'inflight-dedup-test-msg';
+            // Fire two concurrent calls without awaiting
+            const [a, b] = await Promise.all([
+                chatWithGemini(msg),
+                chatWithGemini(msg),
+            ]);
+            expect(a).toBe('mock response');
+            expect(b).toBe('mock response');
+            // generateContent should be called at most once
+            expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+        });
+
+        it('returns cached response on second identical summary call', async () => {
+            const crowd: CrowdSection[] = [{ id: 'cache-s', section: 'C1', density: 'LOW' }];
+            await generateCrowdSummary(crowd);
+            mockGenerateContent.mockClear();
+
+            const second = await generateCrowdSummary(crowd);
+            expect(second).toBe('mock response');
+            expect(mockGenerateContent).not.toHaveBeenCalled();
+        });
+
+        it('returns cached response on second identical forecast call', async () => {
+            const crowd: CrowdSection[] = [{ id: 'cache-f', section: 'F1', density: 'MEDIUM' }];
+            const queues: QueueItem[] = [{ id: 'cache-q', type: 'gate', waitTimeMinutes: 3 }];
+            await generateCrowdForecast(crowd, queues);
+            mockGenerateContent.mockClear();
+
+            const second = await generateCrowdForecast(crowd, queues);
+            expect(second).toBe('mock response');
+            expect(mockGenerateContent).not.toHaveBeenCalled();
+        });
+
+        it('returns cached response on second identical itinerary call', async () => {
+            const crowd: CrowdSection[] = [{ id: 'cache-i', section: 'I1', density: 'HIGH' }];
+            await generateItinerary('cache-sec-200', crowd);
+            mockGenerateContent.mockClear();
+
+            const second = await generateItinerary('cache-sec-200', crowd);
+            expect(second).toBe('mock response');
+            expect(mockGenerateContent).not.toHaveBeenCalled();
+        });
+    });
 });

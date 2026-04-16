@@ -2,6 +2,8 @@ import express, { Request, Response, NextFunction } from 'express';
 import NodeCache from 'node-cache';
 import { getCrowdData, getQueueData } from '../services/firestoreService';
 import { generateCrowdForecast } from '../services/geminiService';
+import { exportAnalyticsSnapshot } from '../services/storageService';
+import { logAnalyticsEvent } from '../services/loggingService';
 import { FORECAST_CACHE_TTL_SECONDS } from '../config/constants';
 
 const router = express.Router();
@@ -15,6 +17,9 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
         const data = await getCrowdData();
         res.setHeader('Cache-Control', 'public, max-age=30');
         res.status(200).json(data);
+        // Fire-and-forget: export snapshot to Cloud Storage + Cloud Logging
+        exportAnalyticsSnapshot(data).catch(() => {});
+        logAnalyticsEvent('crowd_data_served', { sections: data.length });
     } catch (err) {
         next(err);
     }

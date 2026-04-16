@@ -21,6 +21,15 @@ jest.mock('../src/services/geminiService', () => ({
     generateCrowdForecast: jest.fn().mockResolvedValue('Mocked'),
 }));
 
+jest.mock('../src/services/storageService', () => ({
+    exportAnalyticsSnapshot: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../src/services/loggingService', () => ({
+    logAnalyticsEvent: jest.fn(),
+    logWarningEvent: jest.fn(),
+}));
+
 import app from '../src/app';
 
 describe('Queue API', () => {

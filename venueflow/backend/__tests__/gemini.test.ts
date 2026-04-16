@@ -17,7 +17,17 @@ jest.mock('../src/services/firestoreService', () => ({
     getQueueData: jest.fn().mockResolvedValue([{ id: 'gate-1', type: 'gate', waitTimeMinutes: 10 }]),
 }));
 
+jest.mock('../src/services/storageService', () => ({
+    exportAnalyticsSnapshot: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../src/services/loggingService', () => ({
+    logAnalyticsEvent: jest.fn(),
+    logWarningEvent: jest.fn(),
+}));
+
 import app from '../src/app';
+import { chatWithGemini, generateItinerary } from '../src/services/geminiService';
 
 describe('POST /api/gemini/chat', () => {
     it('returns 200 with AI reply for valid message', async () => {
@@ -86,5 +96,23 @@ describe('POST /api/gemini/itinerary', () => {
             .post('/api/gemini/itinerary')
             .send({ section: 'x'.repeat(17) });
         expect(response.status).toBe(400);
+    });
+
+    it('returns 500 when gemini itinerary service throws', async () => {
+        (generateItinerary as jest.Mock).mockRejectedValueOnce(new Error('Gemini down'));
+        const response = await request(app)
+            .post('/api/gemini/itinerary')
+            .send({ section: '999' });
+        expect(response.status).toBe(500);
+    });
+});
+
+describe('POST /api/gemini/chat error handling', () => {
+    it('returns 500 when gemini chat service throws', async () => {
+        (chatWithGemini as jest.Mock).mockRejectedValueOnce(new Error('Gemini down'));
+        const response = await request(app)
+            .post('/api/gemini/chat')
+            .send({ message: 'trigger error' });
+        expect(response.status).toBe(500);
     });
 });

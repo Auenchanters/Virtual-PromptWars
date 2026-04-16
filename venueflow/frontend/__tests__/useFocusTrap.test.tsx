@@ -44,4 +44,11 @@ describe('useFocusTrap', () => {
         fireEvent.keyDown(getByTestId('trap'), { key: 'Escape' });
         expect(onEscape).not.toHaveBeenCalled();
     });
+
+    it('ignores non-Tab, non-Escape key presses', () => {
+        const onEscape = jest.fn();
+        const { getByTestId } = render(<TrapContainer active={true} onEscape={onEscape} />);
+        fireEvent.keyDown(getByTestId('trap'), { key: 'a' });
+        expect(onEscape).not.toHaveBeenCalled();
+    });
 });
