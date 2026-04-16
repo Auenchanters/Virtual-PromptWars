@@ -56,19 +56,14 @@ describe('mapsService.getWalkingTime', () => {
         expect(mockDistanceMatrix).toHaveBeenCalledTimes(1);
     });
 
-    it('falls back to VITE_GOOGLE_MAPS_API_KEY when backend key is unset', async () => {
+    it('throws when GOOGLE_MAPS_BACKEND_API_KEY is not configured', async () => {
         delete process.env.GOOGLE_MAPS_BACKEND_API_KEY;
-        process.env.VITE_GOOGLE_MAPS_API_KEY = 'vite-fallback-key';
-        const result = await getWalkingTime('Gate A', 'Section 112');
-        expect(result.durationSeconds).toBe(360);
-    });
-
-    it('throws when no API key is configured', async () => {
-        delete process.env.GOOGLE_MAPS_BACKEND_API_KEY;
-        delete process.env.VITE_GOOGLE_MAPS_API_KEY;
+        // VITE_ frontend var must NOT be used as a fallback on the server.
+        process.env.VITE_GOOGLE_MAPS_API_KEY = 'frontend-only-key';
         await expect(getWalkingTime('Gate A', 'Section 112')).rejects.toThrow(
-            /api key/i,
+            /GOOGLE_MAPS_BACKEND_API_KEY is not configured/,
         );
+        expect(mockDistanceMatrix).not.toHaveBeenCalled();
     });
 
     it('throws when origin or destination is missing', async () => {

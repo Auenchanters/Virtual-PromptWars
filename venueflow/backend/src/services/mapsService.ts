@@ -31,12 +31,9 @@ export async function getWalkingTime(
     origin: string,
     destination: string,
 ): Promise<WalkingTimeResult> {
-    const apiKey =
-        process.env.GOOGLE_MAPS_BACKEND_API_KEY ||
-        process.env.VITE_GOOGLE_MAPS_API_KEY;
-
+    const apiKey = process.env.GOOGLE_MAPS_BACKEND_API_KEY;
     if (!apiKey) {
-        throw new Error('Google Maps API key is not configured.');
+        throw new Error('GOOGLE_MAPS_BACKEND_API_KEY is not configured.');
     }
     if (!origin || !destination) {
         throw new Error('Origin and destination are required.');
