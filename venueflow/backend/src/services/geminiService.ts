@@ -12,6 +12,12 @@ import {
     CACHE_TTL_SECONDS,
     FORECAST_CACHE_TTL_SECONDS,
 } from '../config/constants';
+import {
+    CHAT_SYSTEM_PROMPT,
+    buildForecastPrompt,
+    buildItineraryPrompt,
+    buildCrowdContext,
+} from '../config/prompts';
 
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) throw new Error('GEMINI_API_KEY environment variable is required');
@@ -84,10 +90,7 @@ async function chatWithGemini(userMessage: string): Promise<string> {
 
     return cached(responseCache, keyOf('chat', userMessage), async () => {
         try {
-            const prompt =
-                `You are VenueFlow Bot, an AI stadium assistant. You provide brief, helpful answers. ` +
-                `Context: Gates 1-4 are entry, Gates 5-8 are exit. Food is available throughout the ` +
-                `venue, vegan options at Stand 12. Question: ${userMessage}`;
+            const prompt = `${CHAT_SYSTEM_PROMPT} Question: ${userMessage}`;
 
             const result = await model.generateContent({
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -130,12 +133,7 @@ async function generateCrowdSummary(crowdData: CrowdSection[]): Promise<string> 
 async function generateCrowdForecast(crowdData: CrowdSection[], queueData: QueueItem[]): Promise<string> {
     try {
         return await cached(forecastCache, keyOf('forecast', { crowdData, queueData }), async () => {
-            const prompt =
-                `You are the VenueFlow operations assistant. Given the current stadium crowd ` +
-                `densities and queue wait times, write a short (max 3 sentences) 15-minute outlook ` +
-                `for attendees. Call out any HIGH density sections, suggest one or two less-crowded ` +
-                `alternatives, and mention the shortest queue type. Be encouraging and specific.\n\n` +
-                `Crowd: ${JSON.stringify(crowdData)}\nQueues: ${JSON.stringify(queueData)}`;
+            const prompt = buildForecastPrompt(JSON.stringify(crowdData), JSON.stringify(queueData));
             const result = await model.generateContent(prompt);
             return result.response.text();
         });
@@ -157,14 +155,8 @@ async function generateItinerary(section: string, crowdData: CrowdSection[] = []
 
     return cached(responseCache, keyOf('itinerary', { section, crowdData }), async () => {
         try {
-            const crowdContext = crowdData.length > 0
-                ? `Current live crowd densities: ${JSON.stringify(crowdData)}. ` +
-                  `If the attendee's section is HIGH density, explicitly suggest a less-crowded ` +
-                  `alternative route or nearby section and recommend a quieter concession stand.`
-                : '';
-            const prompt =
-                `Generate a short, friendly itinerary for a stadium attendee sitting in section ` +
-                `${section}. Suggest arrival time, best gate, and nearest concessions. ${crowdContext}`;
+            const crowdContext = buildCrowdContext(crowdData);
+            const prompt = buildItineraryPrompt(section, crowdContext);
             const result = await model.generateContent(prompt);
             return result.response.text();
         } catch (err: unknown) {

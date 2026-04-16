@@ -15,11 +15,16 @@ const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
         status,
         error: err.message,
     });
-    res.status(status).json({
+    const body: Record<string, unknown> = {
         error: status >= 500 ? 'Internal Server Error' : err.message,
         status,
         requestId: req.id,
-    });
+    };
+    // Expose stack traces in local development only to aid debugging.
+    if (process.env.NODE_ENV === 'development' && err.stack) {
+        body.stack = err.stack;
+    }
+    res.status(status).json(body);
 };
 
 export { errorHandler };

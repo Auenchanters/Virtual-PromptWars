@@ -16,7 +16,8 @@ const mapContainerStyle = {
 
 const STADIUM_CENTER = { lat: 40.7128, lng: -74.006 };
 
-const libraries: ('marker')[] = ['marker'];
+// MarkerF (legacy) does not require the 'marker' library — that is only needed for AdvancedMarkerElement
+const libraries: string[] = [];
 
 const SECTION_COORDINATES: Record<string, { lat: number; lng: number }> = {
   '101': { lat: 40.713, lng: -74.0062 },
@@ -25,10 +26,10 @@ const SECTION_COORDINATES: Record<string, { lat: number; lng: number }> = {
   '104': { lat: 40.7132, lng: -74.0055 },
 };
 
-function getSectionPosition(section: string) {
+function getSectionPosition(section: string, index: number): { lat: number; lng: number } {
   return SECTION_COORDINATES[section] ?? {
-    lat: STADIUM_CENTER.lat + (Math.random() * 0.002 - 0.001),
-    lng: STADIUM_CENTER.lng + (Math.random() * 0.002 - 0.001),
+    lat: STADIUM_CENTER.lat + (index * 0.001),
+    lng: STADIUM_CENTER.lng + (index * 0.001),
   };
 }
 
@@ -82,10 +83,10 @@ const StadiumMap: React.FC<StadiumMapProps> = ({ crowd }) => {
           zoom={17}
           options={{ mapId: 'VENUEFLOW_DEMO_MAP' }}
         >
-          {crowd.map((section) => (
+          {crowd.map((section, index) => (
             <MarkerF
               key={section.section}
-              position={getSectionPosition(section.section)}
+              position={getSectionPosition(section.section, index)}
               icon={densityMarkerIcon(section.density)}
               title={`Section ${section.section} — ${densityLabel(section.density)}`}
             />

@@ -1,6 +1,15 @@
 import React, { useMemo } from 'react';
-import { CrowdSection } from '../types';
+import { CrowdSection, CrowdDensity } from '../types';
 import { densityBgClass, densityLabel } from '../utils/density';
+
+/** Map density level to a visible directional icon for non-colour users. */
+function densityIcon(density: CrowdDensity): string {
+  switch (density) {
+    case 'HIGH': return '▲';
+    case 'MEDIUM': return '▶';
+    case 'LOW': return '▼';
+  }
+}
 
 interface CrowdHeatmapProps {
   data: CrowdSection[];
@@ -20,7 +29,7 @@ const CrowdHeatmap: React.FC<CrowdHeatmapProps> = ({ data }) => {
         >
           <span className="text-lg">Sec {section.section}</span>
           <span className="text-sm bg-black bg-opacity-50 px-2 py-1 mt-2 rounded">
-            {section.density}
+            <span>{densityIcon(section.density)} </span><span>{section.density}</span>
           </span>
         </div>
       );

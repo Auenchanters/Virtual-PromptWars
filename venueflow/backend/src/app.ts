@@ -6,8 +6,10 @@ import compression from 'compression';
 import 'dotenv/config';
 import './config/env';
 
+import { env } from './config/env';
 import { logger } from './utils/logger';
 import { REQUEST_BODY_LIMIT, REQUEST_TIMEOUT_MS } from './config/constants';
+import { logAnalyticsEvent } from './services/loggingService';
 import { readLimiter, writeLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
 import { requestId } from './middleware/requestId';
@@ -22,6 +24,9 @@ import staffRoutes from './routes/staff';
 if (!process.env.STAFF_API_KEY) {
     logger.warn('STAFF_API_KEY not set; staff broadcast endpoint will return 503');
 }
+if (!process.env.FRONTEND_URL && process.env.NODE_ENV === 'production') {
+    throw new Error('FRONTEND_URL must be set in production');
+}
 
 const app = express();
 
@@ -31,13 +36,28 @@ app.use(requestId);
 app.use(requestTimeout(REQUEST_TIMEOUT_MS));
 app.use(compression());
 
+/* ── Request logging — structured events for Cloud Logging ── */
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        logAnalyticsEvent('http_request', {
+            method: req.method,
+            path: req.originalUrl,
+            statusCode: res.statusCode,
+            duration: Date.now() - start,
+        });
+    });
+    next();
+});
+
 /* ── Helmet security headers for API routes only ── */
 const apiHelmet = helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
+            // Tailwind builds are inlined at compile time — remove unsafe-inline if using a custom CSS build
+            styleSrc: ["'self'"],
             imgSrc: ["'self'", 'data:', 'https:'],
             connectSrc: ["'self'"],
             frameAncestors: ["'none'"],
@@ -52,14 +72,13 @@ const apiHelmet = helmet({
     crossOriginResourcePolicy: { policy: 'same-site' },
 });
 
-const allowedOrigins: string[] = [
-    'http://localhost:5173',
-    ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
-];
+const allowedOrigins: string[] = [env.FRONTEND_URL];
 
 const apiCors = cors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-        // Allow requests with no origin (server-to-server, same-origin in some browsers)
+        // Allow requests with no origin — covers server-to-server calls, curl/Postman,
+        // and same-origin navigations where browsers omit the Origin header. Safe because
+        // authentication is enforced separately via X-Staff-Key for privileged endpoints.
         if (!origin) { callback(null, true); return; }
         // Allow explicitly listed origins
         if (allowedOrigins.includes(origin)) { callback(null, true); return; }

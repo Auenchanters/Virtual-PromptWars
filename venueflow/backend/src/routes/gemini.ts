@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { chatWithGemini, generateItinerary } from '../services/geminiService';
-import { getCrowdData } from '../services/firestoreService';
+import { chatWithGemini, generateItinerary, generateCrowdForecast, generateCrowdSummary } from '../services/geminiService';
+import { getCrowdData, getQueueData } from '../services/firestoreService';
+import { exportAnalyticsSnapshot } from '../services/storageService';
 import { chatSchema, itinerarySchema } from '../schemas/requests';
 
 const router = express.Router();
@@ -45,6 +46,37 @@ router.post('/itinerary', async (req: Request, res: Response, next: NextFunction
         const crowd = await getCrowdData().catch(() => []);
         const itinerary = await generateItinerary(parsed.data.section, crowd);
         res.status(200).json({ itinerary });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * GET /api/gemini/summary — AI-generated crowd density summary.
+ */
+router.get('/summary', async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+        const crowd = await getCrowdData();
+        const summary = await generateCrowdSummary(crowd);
+        // Fire-and-forget: export snapshot to Cloud Storage for analytics
+        exportAnalyticsSnapshot(crowd).catch(() => {});
+        res.status(200).json({ summary });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * GET /api/gemini/forecast — AI-generated 15-minute crowd forecast.
+ */
+router.get('/forecast', async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+        const [crowd, queues] = await Promise.all([
+            getCrowdData(),
+            getQueueData(),
+        ]);
+        const forecast = await generateCrowdForecast(crowd, queues);
+        res.status(200).json({ forecast });
     } catch (err) {
         next(err);
     }

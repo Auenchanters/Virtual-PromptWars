@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { getItinerary } from '../services/api';
 import { MAX_SECTION_LENGTH } from '../utils/constants';
 
@@ -7,9 +7,11 @@ const ItineraryPlanner: React.FC = () => {
   const [itinerary, setItinerary] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inflightRef = useRef(false);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (inflightRef.current) return;
     const trimmed = section.trim();
     if (!trimmed) {
       setError('Please enter your seating section.');
@@ -17,6 +19,7 @@ const ItineraryPlanner: React.FC = () => {
     }
     setError(null);
     setLoading(true);
+    inflightRef.current = true;
     try {
       const response = await getItinerary(trimmed);
       setItinerary(response);
@@ -25,6 +28,7 @@ const ItineraryPlanner: React.FC = () => {
       setItinerary('');
     } finally {
       setLoading(false);
+      inflightRef.current = false;
     }
   };
 
@@ -78,6 +82,7 @@ const ItineraryPlanner: React.FC = () => {
           className="mt-6 p-4 border rounded bg-gray-50"
           role="region"
           aria-live="polite"
+          aria-atomic="true"
           aria-label="Generated itinerary"
         >
           <h3 className="font-bold text-lg mb-2">Your Itinerary</h3>
