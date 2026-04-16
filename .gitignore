@@ -12,3 +12,4 @@ venueflow/frontend/test-output.txt
 
 # Local IDE / agent settings
 .claude/settings.json
+.claude/settings.local.json
